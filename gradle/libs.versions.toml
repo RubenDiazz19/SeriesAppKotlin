@@ -25,10 +25,12 @@ gsonVersion = "2.10.1"
 okhttpVersion = "4.12.0"
 
 # Hilt
-hiltVersion = "2.48"
-hiltCompilerVersion = "2.48"
+hiltVersion = "2.51.1"
+roomCommonJvm = "2.7.0"
+roomRuntimeAndroid = "2.7.0"
 
 [libraries]
+
 # AndroidX básicos
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 
@@ -69,7 +71,9 @@ okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor",
 
 # Hilt (Inyección de dependencias)
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hiltVersion" }
-hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hiltCompilerVersion" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hiltVersion" }
+androidx-room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
+androidx-room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "roomRuntimeAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
