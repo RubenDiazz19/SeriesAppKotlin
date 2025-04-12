@@ -1,0 +1,20 @@
+package com.example.peliculasserieskotlin
+
+import android.os.Bundle
+import android.app.Activity
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
+import com.example.peliculasserieskotlin.presentation.home.HomeScreen
+import com.example.peliculasserieskotlin.ui.theme.PeliculasSeriesKotlinTheme
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            PeliculasSeriesKotlinTheme {
+                HomeScreen()
+            }
+        }
+    }
+}
