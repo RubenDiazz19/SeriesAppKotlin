@@ -31,11 +31,12 @@ object AppModule {
     fun provideMovieDao(database: MovieDatabase): MovieDao {
         return database.movieDao()
     }
-
+    /*
     @Provides
     @Singleton
     fun provideMovieRepository(movieDao: MovieDao): MovieRepository {
         return RoomMovieRepository(movieDao)
     }
+    */
 
 }
