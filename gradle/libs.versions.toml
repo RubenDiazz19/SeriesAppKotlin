@@ -17,6 +17,7 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 
 # Room
+navigationCompose = "2.8.9"
 roomVersion = "2.7.0"
 
 # Retrofit + Gson + OkHttp
@@ -36,6 +37,7 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 
 # Lifecycle + ViewModel + Compose
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewModelCompose" }
 
 # Jetpack Compose
