@@ -63,6 +63,8 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.compose.runtime.livedata)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.coil.compose)
+
 
 
     // Hilt
