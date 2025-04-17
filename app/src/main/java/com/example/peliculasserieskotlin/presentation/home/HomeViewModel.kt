@@ -2,39 +2,50 @@ package com.example.peliculasserieskotlin.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.peliculasserieskotlin.domain.MovieRepository
-import com.example.peliculasserieskotlin.domain.Movie
+import com.example.peliculasserieskotlin.data.repository.SeriesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: MovieRepository
+    private val seriesRepository: SeriesRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
-    val uiState: StateFlow<HomeUiState> = _uiState
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState = _uiState.asStateFlow()
+
+    private var currentPage = 1
+    private var canPaginate = true
 
     init {
-        viewModelScope.launch {
-            repository.getMovies().collect { movies ->
-                _uiState.value = HomeUiState(isLoading = false, movies = movies)
-            }
+        loadSeries()
+    }
+
+    fun loadNextPage() {
+        if (canPaginate && !_uiState.value.isLoading) {
+            currentPage++
+            loadSeries()
         }
     }
 
-    fun insertInitialMovies() {
+    private fun loadSeries() {
         viewModelScope.launch {
-            val initialMovies = listOf(
-                Movie(1, "Regreso al Futuro", "1985", "https://via.placeholder.com/150"),
-                Movie(2, "El Padrino", "1972", "https://via.placeholder.com/150"),
-                Movie(3, "Star Wars", "1977", "https://via.placeholder.com/150")
-            )
-            repository.insertMovies(initialMovies)
+            _uiState.update { it.copy(isLoading = true) }
+
+            seriesRepository.getSeries(currentPage, genre = null).collect { newSeries ->
+                if (newSeries.isEmpty()) canPaginate = false
+
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        series = currentState.series + newSeries,
+                        isLoading = false
+                    )
+                }
+            }
         }
     }
 }

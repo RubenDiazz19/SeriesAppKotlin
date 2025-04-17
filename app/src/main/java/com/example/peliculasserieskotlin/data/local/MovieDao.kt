@@ -1,4 +1,4 @@
-package com.example.peliculasserieskotlin.data
+package com.example.peliculasserieskotlin.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert

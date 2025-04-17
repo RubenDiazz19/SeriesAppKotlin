@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.peliculasserieskotlin.presentation.detail.MovieDetailScreen
+import com.example.peliculasserieskotlin.presentation.detail.SeriesDetailScreen
 import com.example.peliculasserieskotlin.presentation.home.HomeScreen
 import com.example.peliculasserieskotlin.presentation.home.HomeViewModel
 import com.example.peliculasserieskotlin.ui.theme.PeliculasSeriesKotlinTheme
@@ -17,7 +18,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: HomeViewModel by viewModels()
+    private val viewModel: HomeViewModel by viewModels<HomeViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,23 +30,24 @@ class MainActivity : ComponentActivity() {
                     composable("home") {
                         HomeScreen(
                             viewModel = viewModel,
-                            onMovieClick = { movie ->
-                                navController.navigate("detail/${movie.id}")
+                            onSeriesClick = { series ->
+                                navController.navigate("detail/${series.id}")
                             }
                         )
                     }
-                    composable("detail/{movieId}") { backStackEntry ->
-                        val movieId = backStackEntry.arguments?.getString("movieId")?.toIntOrNull()
+                    composable("detail/{seriesId}") { backStackEntry ->
+                        val seriesId = backStackEntry.arguments?.getString("seriesId")?.toIntOrNull()
                         val uiState = viewModel.uiState.collectAsState().value
-                        val movie = uiState.movies.find { it.id == movieId }
+                        val series = uiState.series.find { it.id == seriesId }
 
-                        movie?.let {
-                            MovieDetailScreen(movie = it)
+                        series?.let {
+                            SeriesDetailScreen(series = it)
                         }
                     }
-
                 }
             }
         }
     }
 }
+
+
