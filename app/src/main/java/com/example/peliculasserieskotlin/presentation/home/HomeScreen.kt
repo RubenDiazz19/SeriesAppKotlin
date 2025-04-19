@@ -1,6 +1,5 @@
 package com.example.peliculasserieskotlin.presentation.home
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,99 +13,77 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.peliculasserieskotlin.R
+import com.example.peliculasserieskotlin.domain.model.Movie
 import com.example.peliculasserieskotlin.domain.model.Series
+import com.example.peliculasserieskotlin.presentation.home.HomeViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(
-    viewModel: HomeViewModel,
-    onSeriesClick: (Series) -> Unit
-) {
-    val state by viewModel.uiState.collectAsState()
-    val gridState = rememberLazyGridState()
+fun HomeScreen(viewModel: HomeViewModel) {
+    val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val movies by viewModel.movies.collectAsState()
+    val series by viewModel.series.collectAsState()
 
-    LaunchedEffect(gridState.canScrollForward) {
-        if (!gridState.canScrollForward && !state.isLoading) {
-            viewModel.loadNextPage()
-        }
-    }
+    val listState = rememberLazyGridState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text(text = "Series populares") })
-        }
-    ) { paddingValues ->
+    Column(modifier = Modifier.fillMaxSize()) {
+
+        // Espaciado visual antes de la lista
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Grid con scroll infinito
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            state = gridState,
+            state = listState,
+            columns = GridCells.Adaptive(150.dp),
             modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(4.dp)
+                .fillMaxSize()
+                .padding(8.dp)
         ) {
-            items(state.series) { series ->
-                SeriesItem(serie = series, onClick = onSeriesClick)
+            // Colocar el CategoryDropdown justo encima de las tarjetas
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                CategoryDropdown(
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = { viewModel.updateCategory(it) }
+                )
             }
 
-            if (state.isLoading) {
-                item(span = { GridItemSpan(2) }) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
+            if (selectedCategory == "Películas") {
+                items(movies) { movie ->
+                    MovieSeriesItem(
+                        title = movie.title,
+                        imageUrl = movie.posterUrl,
+                        rating = movie.voteAverage
+                    )
+                }
+            } else {
+                items(series) { serie ->
+                    MovieSeriesItem(
+                        title = serie.name,
+                        imageUrl = serie.posterUrl,
+                        rating = serie.voteAverage
+                    )
                 }
             }
-        }
-    }
-    Log.e("HomeScreen", "Series: ${state.series}")
-}
 
-@Composable
-fun SeriesItem(serie: Series, onClick: (Series) -> Unit) {
-    Card(
-        modifier = Modifier
-            .padding(4.dp)
-            .fillMaxWidth()
-            .clickable { onClick(serie) },
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column {
-            Image(
-                painter = rememberAsyncImagePainter(
-                    model = getPosterUrl(serie.posterUrl),
-                    contentScale = ContentScale.Crop
-                ),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = serie.name,
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            Text(
-                text = "Año: ${serie.year}",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-            )
         }
-    }
-}
 
-fun getPosterUrl(path: String?): String {
-    return if (!path.isNullOrBlank()) {
-        if (path.startsWith("http")) path else "https://image.tmdb.org/t/p/w500$path"
-    } else {
-        "" // Opcional: Puedes retornar un placeholder aquí
+
+        val shouldLoadMore = remember {
+            derivedStateOf {
+                val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                val totalItems = listState.layoutInfo.totalItemsCount
+                lastVisible >= totalItems - 3
+            }
+        }
+
+        LaunchedEffect(shouldLoadMore.value) {
+            if (shouldLoadMore.value) {
+                viewModel.loadNextPage()
+            }
+        }
     }
 }
