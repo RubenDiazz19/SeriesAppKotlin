@@ -2,12 +2,16 @@ package com.example.peliculasserieskotlin
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.example.peliculasserieskotlin.presentation.home.HomeViewModel
 import com.example.peliculasserieskotlin.presentation.home.HomeScreen
 import com.example.peliculasserieskotlin.ui.theme.PeliculasSeriesKotlinTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -16,6 +20,38 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Configurar el manejador de navegación hacia atrás
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // Si el buscador inline está activo, ciérralo
+                if (homeViewModel.inlineSearchActive.value) {
+                    homeViewModel.hideInlineSearch()
+                } else {
+                    // Comportamiento normal de retroceso
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
+
+        // Opcionalmente, puedes actualizar el callback según el estado del buscador
+        lifecycleScope.launch {
+            homeViewModel.inlineSearchActive.collectLatest { isActive ->
+                // Actualizamos el estado del callback según si el buscador está activo o no
+                onBackPressedDispatcher.addCallback(this@MainActivity, object : OnBackPressedCallback(isActive) {
+                    override fun handleOnBackPressed() {
+                        if (isActive) {
+                            homeViewModel.hideInlineSearch()
+                        } else {
+                            isEnabled = false
+                            onBackPressedDispatcher.onBackPressed()
+                        }
+                    }
+                })
+            }
+        }
+
         setContent {
             PeliculasSeriesKotlinTheme {
                 HomeScreen(viewModel = homeViewModel)

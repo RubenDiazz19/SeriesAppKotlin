@@ -14,4 +14,8 @@ interface MovieDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovies(movies: List<MovieEntity>)
+
+    @Query("SELECT * FROM movies WHERE title LIKE :query")
+    suspend fun searchMovies(query: String): List<MovieEntity>
+
 }

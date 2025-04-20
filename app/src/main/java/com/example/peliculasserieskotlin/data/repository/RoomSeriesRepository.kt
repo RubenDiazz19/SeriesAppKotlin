@@ -30,6 +30,13 @@ class RoomSeriesRepository @Inject constructor(
         seriesDao.insertSeries(series.map { it.toEntity() })
     }
 
+    override suspend fun searchSeries(query: String): List<Series> {
+        return seriesDao.searchSeries("%$query%").map {
+            it.toDomain()
+        }
+    }
+
+
     // Mapeo de entidad a dominio
     private fun SeriesEntity.toDomain(): Series {
         return Series(

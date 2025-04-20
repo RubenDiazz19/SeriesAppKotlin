@@ -33,6 +33,13 @@ class RoomMovieRepository @Inject constructor(
         movieDao.insertMovies(movies.map { it.toEntity() })
     }
 
+    override suspend fun searchMovies(query: String): List<Movie> {
+        return movieDao.searchMovies("%$query%").map {
+            it.toDomain()
+        }
+    }
+
+
     private fun MovieEntity.toDomain(): Movie {
         return Movie(
             id = id,

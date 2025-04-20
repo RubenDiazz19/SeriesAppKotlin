@@ -13,5 +13,9 @@ interface SeriesDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSeries(series: List<SeriesEntity>)
+
+    @Query("SELECT * FROM series_table WHERE name LIKE :query")
+    suspend fun searchSeries(query: String): List<SeriesEntity>
+
 }
 
