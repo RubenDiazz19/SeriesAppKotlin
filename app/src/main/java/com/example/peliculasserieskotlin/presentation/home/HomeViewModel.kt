@@ -170,4 +170,14 @@ class HomeViewModel @Inject constructor(
             isSearchingRemotely = false
         }
     }
+
+    enum class SortType { ALPHABETIC, RATING, FAVORITE }
+
+    private val _sortBy = MutableStateFlow(SortType.ALPHABETIC)
+    val sortBy: StateFlow<SortType> = _sortBy.asStateFlow()
+
+    fun setSortType(type: SortType) {
+        _sortBy.value = type
+    }
+
 }
