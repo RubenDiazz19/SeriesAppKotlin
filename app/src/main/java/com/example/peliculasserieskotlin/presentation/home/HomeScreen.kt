@@ -1,6 +1,7 @@
 package com.example.peliculasserieskotlin.presentation.home
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
@@ -27,23 +29,34 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.example.peliculasserieskotlin.domain.model.Movie
 import com.example.peliculasserieskotlin.domain.model.Series
-import com.example.peliculasserieskotlin.presentation.home.HomeViewModel.SortType
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
-    val selectedCategory by viewModel.selectedCategory.collectAsState()
-    val movies            by viewModel.movies.collectAsState()
-    val series            by viewModel.series.collectAsState()
-    val filteredMovies    by viewModel.filteredMovies
-    val filteredSeries    by viewModel.filteredSeries
-    val searchText        by remember { derivedStateOf { viewModel.searchText } }
-    val isSearching       by remember { derivedStateOf { viewModel.isSearchingRemotely } }
-    val sortBy            by viewModel.sortBy.collectAsState()
-    val inlineSearch      by viewModel.inlineSearchActive.collectAsState()
+    val selectedCategory      by viewModel.selectedCategory.collectAsState()
+    val movies               by viewModel.movies.collectAsState()
+    val series               by viewModel.series.collectAsState()
+    val filteredMovies       by viewModel.filteredMovies
+    val filteredSeries       by viewModel.filteredSeries
+    val searchText           by remember { derivedStateOf { viewModel.searchText } }
+    val isSearching          by remember { derivedStateOf { viewModel.isSearchingRemotely } }
+    val isLoading            by remember { derivedStateOf { viewModel.isLoadingData } }
+    val sortBy               by viewModel.sortBy.collectAsState()
+    val inlineSearchActive   by viewModel.inlineSearchActive.collectAsState()
 
     val listState = rememberLazyGridState()
 
-    // Detectamos si estamos al tope para mostrar el header (dropdown + buscador + botones)
+
+    // Si el buscador flotante está activo, al Back: ocultarlo y limpiar texto
+    BackHandler(enabled = inlineSearchActive) {
+        viewModel.hideInlineSearch()
+        viewModel.onSearchQueryChanged("")
+    }
+    // Si no hay buscador flotante y hay texto en la cabecera, al Back: limpiar texto
+    BackHandler(enabled = !inlineSearchActive && searchText.isNotBlank()) {
+        viewModel.onSearchQueryChanged("")
+    }
+
+    // Detectar scroll-top para mostrar cabecera
     val showHeader by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex == 0 &&
@@ -51,47 +64,23 @@ fun HomeScreen(viewModel: HomeViewModel) {
         }
     }
 
-    // Construimos la lista final ya filtrada + ordenada
+    // Items finales (sin ordenar localmente; la VM recupera ya ordenados)
     val itemsToDisplay: List<Any> by remember(
         selectedCategory, searchText,
         movies, series,
-        filteredMovies, filteredSeries,
-        sortBy
+        filteredMovies, filteredSeries
     ) {
         derivedStateOf {
-            // Base: pelis o series + filtro de búsqueda
-            val base = when {
-                selectedCategory == "Películas" && searchText.isNotBlank() ->
-                    filteredMovies
-                selectedCategory == "Películas" ->
-                    movies
-                searchText.isNotBlank() ->
-                    filteredSeries
-                else ->
-                    series
-            }
-            // Aplicar orden según sortBy
-            when (sortBy) {
-                SortType.ALPHABETIC -> base.sortedWith(compareBy {
-                    when (it) {
-                        is Movie  -> it.title.lowercase()
-                        is Series -> it.name.lowercase()
-                        else      -> ""
-                    }
-                })
-                SortType.RATING -> base.sortedWith(compareByDescending {
-                    when (it) {
-                        is Movie  -> it.voteAverage
-                        is Series -> it.voteAverage
-                        else      -> 0.0
-                    }
-                })
-                SortType.FAVORITE -> base // favoritos real to-do
+            when {
+                selectedCategory == "Películas" && searchText.isNotBlank() -> filteredMovies
+                selectedCategory == "Películas" -> movies
+                searchText.isNotBlank() -> filteredSeries
+                else -> series
             }
         }
     }
 
-    // Detección de scroll para paginar
+    // Paginación
     val shouldLoadMore by remember {
         derivedStateOf {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
@@ -108,14 +97,16 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            // HEADER (solo si estamos arriba)
+            // CABECERA: dropdown + buscador + botones de orden
             AnimatedVisibility(
                 visible = showHeader,
                 enter = fadeIn() + expandVertically(),
-                exit  = fadeOut() + shrinkVertically()
+                exit = fadeOut() + shrinkVertically()
             ) {
-                Column {
-                    // Dropdown de categorías
+                Column(
+                    modifier = Modifier.padding(top = 24.dp) // Espacio superior añadido aquí
+                ) {
+                    // Dropdown centrado
                     Box(
                         Modifier
                             .fillMaxWidth()
@@ -127,8 +118,8 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             onCategorySelected = viewModel::updateCategory
                         )
                     }
-                    // Buscador principal
-                    if (!inlineSearch) {
+                    // Buscador de cabecera
+                    if (!inlineSearchActive) {
                         OutlinedTextField(
                             value = searchText,
                             onValueChange = viewModel::onSearchQueryChanged,
@@ -153,50 +144,44 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             .padding(bottom = 4.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        // Menú
+                        //★ Valoración
                         IconButton(
-                            onClick = { viewModel.setSortType(SortType.ALPHABETIC) },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Orden alfabético",
-                                tint = if (sortBy == SortType.ALPHABETIC)
-                                    Color.Blue
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        // ⭐ Valoración
-                        IconButton(
-                            onClick = { viewModel.setSortType(SortType.RATING) },
+                            onClick = { viewModel.setSortType(HomeViewModel.SortType.RATING) },
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Star,
-                                contentDescription = "Orden por valoración",
-                                tint = if (sortBy == SortType.RATING)
-                                    Color(0xFFF4C10F)
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                contentDescription = "★",
+                                tint = if (sortBy == HomeViewModel.SortType.RATING)
+                                    Color(0xFFF4C10F) else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
-                        Spacer(Modifier.width(8.dp))
-                        // ❤️ Favoritos
+                        Spacer(Modifier.width(2.dp))
+                        //Orden Alfabético
                         IconButton(
-                            onClick = { viewModel.setSortType(SortType.FAVORITE) },
+                            onClick = { viewModel.setSortType(HomeViewModel.SortType.ALPHABETIC) },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "A–Z",
+                                tint = if (sortBy == HomeViewModel.SortType.ALPHABETIC)
+                                    Color.Blue else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(2.dp))
+                        //❤ Favoritos
+                        IconButton(
+                            onClick = { viewModel.setSortType(HomeViewModel.SortType.FAVORITE) },
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Favorite,
-                                contentDescription = "Orden por favoritos",
-                                tint = if (sortBy == SortType.FAVORITE)
-                                    Color.Red
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                contentDescription = "❤️",
+                                tint = if (sortBy == HomeViewModel.SortType.FAVORITE)
+                                    Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -204,8 +189,8 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 }
             }
 
-            // CUERPO: grid de items o loading
-            if (isSearching) {
+            // CUERPO
+            if (isSearching || isLoading) {
                 Box(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -218,7 +203,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                     columns = GridCells.Adaptive(150.dp),
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(vertical = 4.dp)  // mismo padding arriba y abajo
+                        .padding(vertical = 4.dp)  // mismo padding arriba/abajo
                 ) {
                     items(itemsToDisplay) { item ->
                         when (item) {
@@ -238,12 +223,12 @@ fun HomeScreen(viewModel: HomeViewModel) {
             }
         }
 
-        // BUSCADOR INLINE flotante
+        // BUSCADOR INLINE
         AnimatedVisibility(
-            visible = inlineSearch,
+            visible = inlineSearchActive,
             enter   = fadeIn() + expandVertically(expandFrom = Alignment.CenterVertically),
             exit    = fadeOut() + shrinkVertically(shrinkTowards = Alignment.CenterVertically),
-            modifier = Modifier
+            modifier= Modifier
                 .align(Alignment.TopCenter)
                 .zIndex(10f)
                 .padding(horizontal = 32.dp, vertical = 16.dp)
@@ -281,27 +266,27 @@ fun HomeScreen(viewModel: HomeViewModel) {
             }
         }
 
-        // FAB para abrir el buscador inline
+        // FAB para inline
         AnimatedVisibility(
-            visible = !showHeader && !inlineSearch,
+            visible = !showHeader && !inlineSearchActive,
             enter   = fadeIn(),
             exit    = fadeOut(),
-            modifier = Modifier
+            modifier= Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
         ) {
             FloatingActionButton(
-                onClick       = { viewModel.showInlineSearch() },
-                shape         = CircleShape,
-                containerColor= MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-                elevation     = FloatingActionButtonDefaults.elevation(6.dp),
-                modifier      = Modifier
+                onClick        = { viewModel.showInlineSearch() },
+                shape          = CircleShape,
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+                elevation      = FloatingActionButtonDefaults.elevation(6.dp),
+                modifier       = Modifier
                     .size(50.dp)
                     .border(1.dp, Color.Black, CircleShape)
             ) {
                 Icon(
                     Icons.Default.Search,
-                    contentDescription = "Mostrar buscador",
+                    contentDescription = "🔍",
                     modifier = Modifier.size(24.dp),
                     tint     = MaterialTheme.colorScheme.primary
                 )

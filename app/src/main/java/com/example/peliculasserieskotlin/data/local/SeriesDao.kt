@@ -8,14 +8,15 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SeriesDao {
-    @Query("SELECT * FROM series_table")
+    @Query("SELECT * FROM series")
     fun getAllSeries(): Flow<List<SeriesEntity>>
+
+    @Query("SELECT * FROM series ORDER BY voteAverage DESC")
+    fun getTopRatedSeries(): Flow<List<SeriesEntity>>
+
+    @Query("SELECT * FROM series WHERE name LIKE :searchQuery OR overview LIKE :searchQuery")
+    suspend fun searchSeries(searchQuery: String): List<SeriesEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSeries(series: List<SeriesEntity>)
-
-    @Query("SELECT * FROM series_table WHERE name LIKE :query")
-    suspend fun searchSeries(query: String): List<SeriesEntity>
-
 }
-

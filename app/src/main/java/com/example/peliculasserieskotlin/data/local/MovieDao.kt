@@ -8,14 +8,15 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MovieDao {
-
     @Query("SELECT * FROM movies")
     fun getAllMovies(): Flow<List<MovieEntity>>
 
+    @Query("SELECT * FROM movies ORDER BY voteAverage DESC")
+    fun getTopRatedMovies(): Flow<List<MovieEntity>>
+
+    @Query("SELECT * FROM movies WHERE title LIKE :searchQuery OR overview LIKE :searchQuery")
+    suspend fun searchMovies(searchQuery: String): List<MovieEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovies(movies: List<MovieEntity>)
-
-    @Query("SELECT * FROM movies WHERE title LIKE :query")
-    suspend fun searchMovies(query: String): List<MovieEntity>
-
 }

@@ -37,6 +37,36 @@ class ApiMovieRepository @Inject constructor(
         }
     }
 
+    override fun getTopRatedMovies(page: Int): Flow<List<Movie>> = flow {
+        try {
+            val apiKey = context.getString(R.string.apiKey)
+
+            val response = api.getTopRatedMovies(
+                apiKey = apiKey,
+                page = page
+            )
+
+            val movies = response.results.map { it.toDomain() }
+            emit(movies)
+        } catch (e: Exception) {
+            emit(emptyList())
+        }
+    }
+
+    override fun getFavoriteMovies(page: Int): Flow<List<Movie>> = flow {
+        // En una implementación real, esto podría venir de una base de datos local
+        // que almacene los IDs de las películas favoritas del usuario
+        // Por ahora, simplemente devolvemos películas normales como ejemplo
+        try {
+            val apiKey = context.getString(R.string.apiKey)
+            val response = api.getAllMovies(apiKey = apiKey, page = page)
+            val movies = response.results.map { it.toDomain() }
+            emit(movies)
+        } catch (e: Exception) {
+            emit(emptyList())
+        }
+    }
+
     override suspend fun searchMovies(query: String): List<Movie> {
         return try {
             val apiKey = context.getString(R.string.apiKey)

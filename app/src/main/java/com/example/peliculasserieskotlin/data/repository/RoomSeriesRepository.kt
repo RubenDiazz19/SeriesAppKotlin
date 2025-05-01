@@ -5,24 +5,57 @@ import com.example.peliculasserieskotlin.data.local.SeriesEntity
 import com.example.peliculasserieskotlin.domain.model.Series
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class RoomSeriesRepository @Inject constructor(
     private val seriesDao: SeriesDao
 ) : SeriesRepository {
 
-    override fun getSeries(
-        page: Int,
-        genre: String?
-    ): Flow<List<Series>> {
-        return seriesDao.getAllSeries().map { list ->
-            list.map { it.toDomain() }
-                .filter { series ->
-                    genre?.let {
-                        series.name.contains(it, ignoreCase = true) ||
-                                series.overview.contains(it, ignoreCase = true)
-                    } ?: true
-                }
+    override fun getSeries(page: Int, genre: String?): Flow<List<Series>> {
+        return seriesDao.getAllSeries().map { entities ->
+            entities.map { entity ->
+                Series(
+                    id = entity.id,
+                    name = entity.name,
+                    posterUrl = entity.posterUrl,
+                    overview = entity.overview,
+                    voteAverage = entity.voteAverage,
+                    year = entity.year
+                )
+            }
+        }
+    }
+
+    override fun getTopRatedSeries(page: Int): Flow<List<Series>> {
+        return seriesDao.getTopRatedSeries().map { entities ->
+            entities.map { entity ->
+                Series(
+                    id = entity.id,
+                    name = entity.name,
+                    posterUrl = entity.posterUrl,
+                    overview = entity.overview,
+                    voteAverage = entity.voteAverage,
+                    year = entity.year
+                )
+            }
+        }
+    }
+
+    override fun getFavoriteSeries(page: Int): Flow<List<Series>> {
+        // En una implementación real, esto obtendría las series marcadas como favoritas
+        // Por ahora devolvemos todas las series como ejemplo
+        return seriesDao.getAllSeries().map { entities ->
+            entities.map { entity ->
+                Series(
+                    id = entity.id,
+                    name = entity.name,
+                    posterUrl = entity.posterUrl,
+                    overview = entity.overview,
+                    voteAverage = entity.voteAverage,
+                    year = entity.year
+                )
+            }
         }
     }
 
@@ -36,28 +69,25 @@ class RoomSeriesRepository @Inject constructor(
         }
     }
 
-
-    // Mapeo de entidad a dominio
     private fun SeriesEntity.toDomain(): Series {
         return Series(
             id = id,
             name = name,
-            year = year,
-            overview = overview,
             posterUrl = posterUrl,
-            voteAverage = voteAverage
+            overview = overview,
+            voteAverage = voteAverage,
+            year = year
         )
     }
 
-    // Mapeo de dominio a entidad
     private fun Series.toEntity(): SeriesEntity {
         return SeriesEntity(
             id = id,
             name = name,
-            year = year,
-            overview = overview,
             posterUrl = posterUrl,
-            voteAverage = voteAverage
+            overview = overview,
+            voteAverage = voteAverage,
+            year = year
         )
     }
 }

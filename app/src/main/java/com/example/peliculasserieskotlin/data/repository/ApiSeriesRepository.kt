@@ -23,15 +23,45 @@ class ApiSeriesRepository @Inject constructor(
                 page = page
             )
 
-            val seriesList = response.results.map { it.toDomain() }
+            val series = response.results.map { it.toDomain() }
 
             val filtered = genre?.let { g ->
-                seriesList.filter {
+                series.filter {
                     it.name.contains(g, ignoreCase = true) || it.overview.contains(g, ignoreCase = true)
                 }
-            } ?: seriesList
+            } ?: series
 
             emit(filtered)
+        } catch (e: Exception) {
+            emit(emptyList())
+        }
+    }
+
+    override fun getTopRatedSeries(page: Int): Flow<List<Series>> = flow {
+        try {
+            val apiKey = context.getString(R.string.apiKey)
+
+            val response = api.getTopRatedSeries(
+                apiKey = apiKey,
+                page = page
+            )
+
+            val series = response.results.map { it.toDomain() }
+            emit(series)
+        } catch (e: Exception) {
+            emit(emptyList())
+        }
+    }
+
+    override fun getFavoriteSeries(page: Int): Flow<List<Series>> = flow {
+        // En una implementación real, esto podría venir de una base de datos local
+        // que almacene los IDs de las series favoritas del usuario
+        // Por ahora, simplemente devolvemos series normales como ejemplo
+        try {
+            val apiKey = context.getString(R.string.apiKey)
+            val response = api.getAllSeries(apiKey = apiKey, page = page)
+            val series = response.results.map { it.toDomain() }
+            emit(series)
         } catch (e: Exception) {
             emit(emptyList())
         }
@@ -49,6 +79,6 @@ class ApiSeriesRepository @Inject constructor(
     }
 
     override suspend fun insertSeries(series: List<Series>) {
-        // No se usa porque las series vienen directamente de la API
+        // No se usa, ya que vienen desde la API
     }
 }

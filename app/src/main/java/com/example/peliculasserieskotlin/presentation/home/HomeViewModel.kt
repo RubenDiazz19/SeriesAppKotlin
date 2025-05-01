@@ -68,6 +68,9 @@ class HomeViewModel @Inject constructor(
     var isSearchingRemotely by mutableStateOf(false)
         private set
 
+    var isLoadingData by mutableStateOf(false)
+        private set
+
     private val _filteredMovies = mutableStateOf<List<Movie>>(emptyList())
     val filteredMovies: State<List<Movie>> = _filteredMovies
 
@@ -76,22 +79,39 @@ class HomeViewModel @Inject constructor(
 
     private var searchJob: Job? = null
 
-    init {
-        loadMovies()
-        loadSeries()
+    enum class SortType { ALPHABETIC, RATING, FAVORITE }
 
-        // Capturar eventos de tecla "back" cuando el buscador está activo
+    private val _sortBy = MutableStateFlow(SortType.RATING)
+    val sortBy: StateFlow<SortType> = _sortBy.asStateFlow()
+
+    init {
+        loadInitialData()
         setupBackHandler()
+    }
+
+    private fun loadInitialData() {
+        // Cargar datos según el tipo de ordenación inicial
+        when (_sortBy.value) {
+            SortType.ALPHABETIC -> {
+                loadMovies()
+                loadSeries()
+            }
+            SortType.RATING -> {
+                loadTopRatedMovies()
+                loadTopRatedSeries()
+            }
+            SortType.FAVORITE -> {
+                loadFavoriteMovies()
+                loadFavoriteSeries()
+            }
+        }
     }
 
     private fun setupBackHandler() {
         viewModelScope.launch {
-            // Cuando cambia el estado del buscador inline, manejamos la tecla back
             inlineSearchActive.collect { isActive ->
                 if (isActive) {
                     // La lógica para detectar la tecla back se maneja a nivel de actividad
-                    // Esto es solo un placeholder para la funcionalidad
-                    // En una implementación real, configurarías un OnBackPressedCallback en la actividad
                 }
             }
         }
@@ -103,6 +123,7 @@ class HomeViewModel @Inject constructor(
 
     private fun loadMovies() {
         if (!canPaginateMovies) return
+        isLoadingData = true
         viewModelScope.launch {
             movieRepository.getMovies(currentMoviePage, genre = null).collect { newMovies ->
                 if (newMovies.isEmpty()) {
@@ -110,12 +131,44 @@ class HomeViewModel @Inject constructor(
                 } else {
                     _movies.update { it + newMovies }
                 }
+                isLoadingData = false
+            }
+        }
+    }
+
+    private fun loadTopRatedMovies() {
+        if (!canPaginateMovies) return
+        isLoadingData = true
+        viewModelScope.launch {
+            movieRepository.getTopRatedMovies(currentMoviePage).collect { newMovies ->
+                if (newMovies.isEmpty()) {
+                    canPaginateMovies = false
+                } else {
+                    _movies.update { it + newMovies }
+                }
+                isLoadingData = false
+            }
+        }
+    }
+
+    private fun loadFavoriteMovies() {
+        if (!canPaginateMovies) return
+        isLoadingData = true
+        viewModelScope.launch {
+            movieRepository.getFavoriteMovies(currentMoviePage).collect { newMovies ->
+                if (newMovies.isEmpty()) {
+                    canPaginateMovies = false
+                } else {
+                    _movies.update { it + newMovies }
+                }
+                isLoadingData = false
             }
         }
     }
 
     private fun loadSeries() {
         if (!canPaginateSeries) return
+        isLoadingData = true
         viewModelScope.launch {
             seriesRepository.getSeries(currentSeriesPage, genre = null).collect { newSeries ->
                 if (newSeries.isEmpty()) {
@@ -123,6 +176,37 @@ class HomeViewModel @Inject constructor(
                 } else {
                     _series.update { it + newSeries }
                 }
+                isLoadingData = false
+            }
+        }
+    }
+
+    private fun loadTopRatedSeries() {
+        if (!canPaginateSeries) return
+        isLoadingData = true
+        viewModelScope.launch {
+            seriesRepository.getTopRatedSeries(currentSeriesPage).collect { newSeries ->
+                if (newSeries.isEmpty()) {
+                    canPaginateSeries = false
+                } else {
+                    _series.update { it + newSeries }
+                }
+                isLoadingData = false
+            }
+        }
+    }
+
+    private fun loadFavoriteSeries() {
+        if (!canPaginateSeries) return
+        isLoadingData = true
+        viewModelScope.launch {
+            seriesRepository.getFavoriteSeries(currentSeriesPage).collect { newSeries ->
+                if (newSeries.isEmpty()) {
+                    canPaginateSeries = false
+                } else {
+                    _series.update { it + newSeries }
+                }
+                isLoadingData = false
             }
         }
     }
@@ -130,10 +214,18 @@ class HomeViewModel @Inject constructor(
     fun loadNextPage() {
         if (selectedCategory.value == "Películas" && canPaginateMovies) {
             currentMoviePage++
-            loadMovies()
+            when (sortBy.value) {
+                SortType.ALPHABETIC -> loadMovies()
+                SortType.RATING -> loadTopRatedMovies()
+                SortType.FAVORITE -> loadFavoriteMovies()
+            }
         } else if (canPaginateSeries) {
             currentSeriesPage++
-            loadSeries()
+            when (sortBy.value) {
+                SortType.ALPHABETIC -> loadSeries()
+                SortType.RATING -> loadTopRatedSeries()
+                SortType.FAVORITE -> loadFavoriteSeries()
+            }
         }
     }
 
@@ -171,13 +263,33 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    enum class SortType { ALPHABETIC, RATING, FAVORITE }
-
-    private val _sortBy = MutableStateFlow(SortType.ALPHABETIC)
-    val sortBy: StateFlow<SortType> = _sortBy.asStateFlow()
-
     fun setSortType(type: SortType) {
-        _sortBy.value = type
-    }
+        if (_sortBy.value == type) return
 
+        _sortBy.value = type
+
+        // Reiniciar el estado
+        _movies.value = emptyList()
+        _series.value = emptyList()
+        currentMoviePage = 1
+        currentSeriesPage = 1
+        canPaginateMovies = true
+        canPaginateSeries = true
+
+        // Cargar nuevos datos según el tipo de ordenación
+        when (type) {
+            SortType.ALPHABETIC -> {
+                loadMovies()
+                loadSeries()
+            }
+            SortType.RATING -> {
+                loadTopRatedMovies()
+                loadTopRatedSeries()
+            }
+            SortType.FAVORITE -> {
+                loadFavoriteMovies()
+                loadFavoriteSeries()
+            }
+        }
+    }
 }
