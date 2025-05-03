@@ -6,5 +6,7 @@ import com.example.peliculasserieskotlin.domain.model.Series
 data class HomeUiState(
     val movies: List<Movie> = emptyList(),
     val series: List<Series> = emptyList(),
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val isSearching: Boolean = false,
+    val error: String? = null
 )

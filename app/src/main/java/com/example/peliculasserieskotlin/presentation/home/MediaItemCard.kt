@@ -1,15 +1,17 @@
-package com.example.peliculasserieskotlin.presentation.detail
+package com.example.peliculasserieskotlin.presentation.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 
@@ -18,18 +20,19 @@ fun MediaItemCard(
     title: String,
     posterUrl: String,
     voteAverage: Double,
-    onClick: () -> Unit = {} // puedes dejarlo por si luego añades navegación
+    onClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
                 painter = rememberAsyncImagePainter(posterUrl),
-                contentDescription = title,
+                contentDescription = "Poster of $title",
                 modifier = Modifier
                     .height(180.dp)
                     .fillMaxWidth(),
@@ -39,10 +42,12 @@ fun MediaItemCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(horizontal = 8.dp)
+                modifier = Modifier.padding(horizontal = 8.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "★ ${voteAverage}",
+                text = "★ %.1f".format(voteAverage),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(bottom = 8.dp)
             )

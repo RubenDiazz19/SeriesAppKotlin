@@ -2,6 +2,8 @@ package com.example.peliculasserieskotlin.presentation.home
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -13,8 +15,10 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CategoryDropdown(
     selectedCategory: String,
-    onCategorySelected: (String) -> Unit
+    onCategorySelected: (String) -> Unit,
+    categories: List<String> = listOf("Películas", "Series")
 ) {
+    var expanded by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -26,10 +30,23 @@ fun CategoryDropdown(
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier
-                .clickable {
-                    val newCategory = if (selectedCategory == "Películas") "Series" else "Películas"
-                    onCategorySelected(newCategory)
-                }
+                .clickable(
+                    onClick = { expanded = true }
+                )
         )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(category) },
+                    onClick = {
+                        expanded = false
+                        onCategorySelected(category)
+                    }
+                )
+            }
+        }
     }
 }

@@ -5,7 +5,6 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface SeriesApiService {
-
     //Metodo para obtener todas las series
     @GET("discover/tv")
     suspend fun getAllSeries(

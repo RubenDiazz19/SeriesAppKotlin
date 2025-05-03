@@ -11,10 +11,10 @@ interface SeriesDao {
     @Query("SELECT * FROM series")
     fun getAllSeries(): Flow<List<SeriesEntity>>
 
-    @Query("SELECT * FROM series ORDER BY voteAverage DESC")
-    fun getTopRatedSeries(): Flow<List<SeriesEntity>>
+    @Query("SELECT * FROM series ORDER BY voteAverage DESC LIMIT :limit")
+    fun getTopRatedSeries(limit: Int = 20): Flow<List<SeriesEntity>>
 
-    @Query("SELECT * FROM series WHERE name LIKE :searchQuery OR overview LIKE :searchQuery")
+    @Query("SELECT * FROM series WHERE name LIKE '%' || :searchQuery || '%' OR overview LIKE '%' || :searchQuery || '%'")
     suspend fun searchSeries(searchQuery: String): List<SeriesEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

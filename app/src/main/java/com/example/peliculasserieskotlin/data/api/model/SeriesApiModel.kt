@@ -12,18 +12,16 @@ data class SeriesApiModel(
 )
 
 fun SeriesApiModel.toDomain(): Series {
-    // Convertir first_air_date a año
     val year = first_air_date?.split("-")?.getOrNull(0) ?: "Año desconocido"
-    // Construir URL completa de la imagen
     val posterUrl = poster_path?.let { "https://image.tmdb.org/t/p/w500$it" } ?: ""
 
     return Series(
-        id = this.id ?: 0,
-        name = this.name ?: "Serie desconocida",
+        id = id ?: 0,
+        name = name ?: "Serie desconocida",
         year = year,
-        overview = this.overview ?: "Sin descripción",
+        overview = overview ?: "Sin descripción",
         posterUrl = posterUrl,
-        voteAverage = this.vote_average ?: 0.0
+        voteAverage = vote_average ?: 0.0
     )
 }
 

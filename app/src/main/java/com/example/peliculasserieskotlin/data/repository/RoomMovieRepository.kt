@@ -5,7 +5,6 @@ import com.example.peliculasserieskotlin.data.local.MovieEntity
 import com.example.peliculasserieskotlin.domain.model.Movie
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class RoomMovieRepository @Inject constructor(
@@ -14,31 +13,13 @@ class RoomMovieRepository @Inject constructor(
 
     override fun getMovies(page: Int, genre: String?): Flow<List<Movie>> {
         return movieDao.getAllMovies().map { entities ->
-            entities.map { entity ->
-                Movie(
-                    id = entity.id,
-                    title = entity.title,
-                    year = entity.year,
-                    posterUrl = entity.posterUrl,
-                    overview = entity.overview,
-                    voteAverage = entity.voteAverage
-                )
-            }
+            entities.map { it.toDomain() }
         }
     }
 
     override fun getTopRatedMovies(page: Int): Flow<List<Movie>> {
         return movieDao.getTopRatedMovies().map { entities ->
-            entities.map { entity ->
-                Movie(
-                    id = entity.id,
-                    title = entity.title,
-                    year = entity.year,
-                    posterUrl = entity.posterUrl,
-                    overview = entity.overview,
-                    voteAverage = entity.voteAverage
-                )
-            }
+            entities.map { it.toDomain() }
         }
     }
 
@@ -46,16 +27,7 @@ class RoomMovieRepository @Inject constructor(
         // En una implementación real, esto obtendría las películas marcadas como favoritas
         // Por ahora devolvemos todas las películas como ejemplo
         return movieDao.getAllMovies().map { entities ->
-            entities.map { entity ->
-                Movie(
-                    id = entity.id,
-                    title = entity.title,
-                    year = entity.year,
-                    posterUrl = entity.posterUrl,
-                    overview = entity.overview,
-                    voteAverage = entity.voteAverage
-                )
-            }
+            entities.map { it.toDomain() }
         }
     }
 
@@ -64,9 +36,7 @@ class RoomMovieRepository @Inject constructor(
     }
 
     override suspend fun searchMovies(query: String): List<Movie> {
-        return movieDao.searchMovies("%$query%").map {
-            it.toDomain()
-        }
+        return movieDao.searchMovies("%$query%").map { it.toDomain() }
     }
 
     private fun MovieEntity.toDomain(): Movie {

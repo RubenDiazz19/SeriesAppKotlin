@@ -25,9 +25,11 @@ import coil.compose.rememberAsyncImagePainter
 fun MovieSeriesItem(
     title: String,
     imageUrl: String,
-    rating: Double
+    rating: Double,
+    isFavorite: Boolean = false,
+    onFavoriteClick: (() -> Unit)? = null
 ) {
-    var isFavorite by remember { mutableStateOf(false) }
+    var localFavorite by remember { mutableStateOf(isFavorite) }
 
     Column(
         modifier = Modifier
@@ -44,24 +46,21 @@ fun MovieSeriesItem(
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
-                //Imagen de la película/Serie
                 Image(
                     painter = rememberAsyncImagePainter(model = imageUrl),
-                    contentDescription = title,
+                    contentDescription = "Poster of $title",
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Crop
                 )
 
-                // Capa oscura
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black.copy(alpha = 0.45f))
                 )
 
-                // Estrella a la izquierda y Corazón a la derecha
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -69,33 +68,35 @@ fun MovieSeriesItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
-                    //Valoración de la película/Serie
                     Text(
                         text = "⭐ ${String.format("%.1f", rating)}",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodySmall
                     )
-                    //Botón de Favoritos
                     IconButton(
-                        onClick = { isFavorite = !isFavorite },
+                        onClick = {
+                            localFavorite = !localFavorite
+                            onFavoriteClick?.invoke()
+                        },
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = "Favorito",
-                            tint = if (isFavorite) Color.Red else Color.White
+                            imageVector = if (localFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = if (localFavorite) "Remove from favorites" else "Add to favorites",
+                            tint = if (localFavorite) Color.Red else Color.White
                         )
                     }
                 }
             }
         }
 
-        // Título debajo
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp)

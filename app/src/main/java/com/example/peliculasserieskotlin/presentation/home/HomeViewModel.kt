@@ -21,61 +21,25 @@ class HomeViewModel @Inject constructor(
     private val seriesRepository: SeriesRepository
 ) : ViewModel() {
 
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
     private val _selectedCategory = MutableStateFlow("Películas")
     val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
 
-    private val _movies = MutableStateFlow<List<Movie>>(emptyList())
-    val movies: StateFlow<List<Movie>> = _movies.asStateFlow()
+    private val _showSearchBarForced = MutableStateFlow(false)
+    val showSearchBarForced: StateFlow<Boolean> = _showSearchBarForced.asStateFlow()
 
-    private val _series = MutableStateFlow<List<Series>>(emptyList())
-    val series: StateFlow<List<Series>> = _series.asStateFlow()
+    private val _inlineSearchActive = MutableStateFlow(false)
+    val inlineSearchActive: StateFlow<Boolean> = _inlineSearchActive.asStateFlow()
 
     private var currentMoviePage = 1
     private var currentSeriesPage = 1
     private var canPaginateMovies = true
     private var canPaginateSeries = true
 
-    private val _showSearchBarForced = MutableStateFlow(false)
-    val showSearchBarForced: StateFlow<Boolean> = _showSearchBarForced.asStateFlow()
-
-    // Nuevo estado para el buscador inline
-    private val _inlineSearchActive = MutableStateFlow(false)
-    val inlineSearchActive: StateFlow<Boolean> = _inlineSearchActive.asStateFlow()
-
-    fun forceShowSearchBar() {
-        Log.d("FAB", "forceShowSearchBar() llamado")
-        _showSearchBarForced.value = true
-    }
-
-    fun resetShowSearchBar() {
-        Log.d("FAB", "resetShowSearchBar() llamado")
-        _showSearchBarForced.value = false
-    }
-
-    fun showInlineSearch() {
-        Log.d("FAB", "showInlineSearch() llamado")
-        _inlineSearchActive.value = true
-    }
-
-    fun hideInlineSearch() {
-        Log.d("FAB", "hideInlineSearch() llamado")
-        _inlineSearchActive.value = false
-    }
-
     var searchText by mutableStateOf("")
         private set
-
-    var isSearchingRemotely by mutableStateOf(false)
-        private set
-
-    var isLoadingData by mutableStateOf(false)
-        private set
-
-    private val _filteredMovies = mutableStateOf<List<Movie>>(emptyList())
-    val filteredMovies: State<List<Movie>> = _filteredMovies
-
-    private val _filteredSeries = mutableStateOf<List<Series>>(emptyList())
-    val filteredSeries: State<List<Series>> = _filteredSeries
 
     private var searchJob: Job? = null
 
@@ -90,7 +54,6 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun loadInitialData() {
-        // Cargar datos según el tipo de ordenación inicial
         when (_sortBy.value) {
             SortType.ALPHABETIC -> {
                 loadMovies()
@@ -121,92 +84,112 @@ class HomeViewModel @Inject constructor(
         _selectedCategory.value = category
     }
 
+    fun forceShowSearchBar() {
+        Log.d("FAB", "forceShowSearchBar() llamado")
+        _showSearchBarForced.value = true
+    }
+
+    fun resetShowSearchBar() {
+        Log.d("FAB", "resetShowSearchBar() llamado")
+        _showSearchBarForced.value = false
+    }
+
+    fun showInlineSearch() {
+        Log.d("FAB", "showInlineSearch() llamado")
+        _inlineSearchActive.value = true
+    }
+
+    fun hideInlineSearch() {
+        Log.d("FAB", "hideInlineSearch() llamado")
+        _inlineSearchActive.value = false
+    }
+
     private fun loadMovies() {
         if (!canPaginateMovies) return
-        isLoadingData = true
+        updateLoading(true)
         viewModelScope.launch {
             movieRepository.getMovies(currentMoviePage, genre = null).collect { newMovies ->
                 if (newMovies.isEmpty()) {
                     canPaginateMovies = false
                 } else {
-                    _movies.update { it + newMovies }
+                    _uiState.update { it.copy(movies = it.movies + newMovies) }
                 }
-                isLoadingData = false
+                updateLoading(false)
             }
         }
     }
 
     private fun loadTopRatedMovies() {
         if (!canPaginateMovies) return
-        isLoadingData = true
+        updateLoading(true)
         viewModelScope.launch {
             movieRepository.getTopRatedMovies(currentMoviePage).collect { newMovies ->
                 if (newMovies.isEmpty()) {
                     canPaginateMovies = false
                 } else {
-                    _movies.update { it + newMovies }
+                    _uiState.update { it.copy(movies = it.movies + newMovies) }
                 }
-                isLoadingData = false
+                updateLoading(false)
             }
         }
     }
 
     private fun loadFavoriteMovies() {
         if (!canPaginateMovies) return
-        isLoadingData = true
+        updateLoading(true)
         viewModelScope.launch {
             movieRepository.getFavoriteMovies(currentMoviePage).collect { newMovies ->
                 if (newMovies.isEmpty()) {
                     canPaginateMovies = false
                 } else {
-                    _movies.update { it + newMovies }
+                    _uiState.update { it.copy(movies = it.movies + newMovies) }
                 }
-                isLoadingData = false
+                updateLoading(false)
             }
         }
     }
 
     private fun loadSeries() {
         if (!canPaginateSeries) return
-        isLoadingData = true
+        updateLoading(true)
         viewModelScope.launch {
             seriesRepository.getSeries(currentSeriesPage, genre = null).collect { newSeries ->
                 if (newSeries.isEmpty()) {
                     canPaginateSeries = false
                 } else {
-                    _series.update { it + newSeries }
+                    _uiState.update { it.copy(series = it.series + newSeries) }
                 }
-                isLoadingData = false
+                updateLoading(false)
             }
         }
     }
 
     private fun loadTopRatedSeries() {
         if (!canPaginateSeries) return
-        isLoadingData = true
+        updateLoading(true)
         viewModelScope.launch {
             seriesRepository.getTopRatedSeries(currentSeriesPage).collect { newSeries ->
                 if (newSeries.isEmpty()) {
                     canPaginateSeries = false
                 } else {
-                    _series.update { it + newSeries }
+                    _uiState.update { it.copy(series = it.series + newSeries) }
                 }
-                isLoadingData = false
+                updateLoading(false)
             }
         }
     }
 
     private fun loadFavoriteSeries() {
         if (!canPaginateSeries) return
-        isLoadingData = true
+        updateLoading(true)
         viewModelScope.launch {
             seriesRepository.getFavoriteSeries(currentSeriesPage).collect { newSeries ->
                 if (newSeries.isEmpty()) {
                     canPaginateSeries = false
                 } else {
-                    _series.update { it + newSeries }
+                    _uiState.update { it.copy(series = it.series + newSeries) }
                 }
-                isLoadingData = false
+                updateLoading(false)
             }
         }
     }
@@ -232,15 +215,19 @@ class HomeViewModel @Inject constructor(
     fun onSearchQueryChanged(query: String) {
         searchText = query
 
-        val localMovies = movies.value.filter {
+        val localMovies = uiState.value.movies.filter {
             it.title.contains(query, ignoreCase = true)
         }
-        val localSeries = series.value.filter {
+        val localSeries = uiState.value.series.filter {
             it.name.contains(query, ignoreCase = true)
         }
 
-        _filteredMovies.value = localMovies
-        _filteredSeries.value = localSeries
+        _uiState.update { it.copy(
+            movies = localMovies,
+            series = localSeries,
+            isSearching = true,
+            error = null
+        )}
 
         searchJob?.cancel()
 
@@ -254,12 +241,19 @@ class HomeViewModel @Inject constructor(
 
     private fun searchRemotely(query: String) {
         viewModelScope.launch {
-            isSearchingRemotely = true
-            val remoteMovies = movieRepository.searchMovies(query)
-            val remoteSeries = seriesRepository.searchSeries(query)
-            _filteredMovies.value = remoteMovies
-            _filteredSeries.value = remoteSeries
-            isSearchingRemotely = false
+            _uiState.update { it.copy(isSearching = true, error = null) }
+            try {
+                val remoteMovies = movieRepository.searchMovies(query)
+                val remoteSeries = seriesRepository.searchSeries(query)
+                _uiState.update { it.copy(
+                    movies = remoteMovies,
+                    series = remoteSeries,
+                    isSearching = false,
+                    error = null
+                )}
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSearching = false, error = e.message) }
+            }
         }
     }
 
@@ -269,8 +263,7 @@ class HomeViewModel @Inject constructor(
         _sortBy.value = type
 
         // Reiniciar el estado
-        _movies.value = emptyList()
-        _series.value = emptyList()
+        _uiState.value = HomeUiState()
         currentMoviePage = 1
         currentSeriesPage = 1
         canPaginateMovies = true
@@ -291,5 +284,9 @@ class HomeViewModel @Inject constructor(
                 loadFavoriteSeries()
             }
         }
+    }
+
+    private fun updateLoading(isLoading: Boolean) {
+        _uiState.update { it.copy(isLoading = isLoading) }
     }
 }

@@ -83,6 +83,9 @@ dependencies {
     implementation(libs.retrofit.gson)
     implementation(libs.gson)
 
+    // Paging 3
+    implementation(libs.androidx.paging.runtime)
+
 
     // Testing
     testImplementation(libs.junit)

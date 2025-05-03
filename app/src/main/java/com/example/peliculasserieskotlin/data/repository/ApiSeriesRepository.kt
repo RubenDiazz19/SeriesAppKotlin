@@ -17,20 +17,16 @@ class ApiSeriesRepository @Inject constructor(
     override fun getSeries(page: Int, genre: String?): Flow<List<Series>> = flow {
         try {
             val apiKey = context.getString(R.string.apiKey)
-
             val response = api.getAllSeries(
                 apiKey = apiKey,
                 page = page
             )
-
             val series = response.results.map { it.toDomain() }
-
             val filtered = genre?.let { g ->
                 series.filter {
                     it.name.contains(g, ignoreCase = true) || it.overview.contains(g, ignoreCase = true)
                 }
             } ?: series
-
             emit(filtered)
         } catch (e: Exception) {
             emit(emptyList())
@@ -40,12 +36,10 @@ class ApiSeriesRepository @Inject constructor(
     override fun getTopRatedSeries(page: Int): Flow<List<Series>> = flow {
         try {
             val apiKey = context.getString(R.string.apiKey)
-
             val response = api.getTopRatedSeries(
                 apiKey = apiKey,
                 page = page
             )
-
             val series = response.results.map { it.toDomain() }
             emit(series)
         } catch (e: Exception) {
@@ -54,9 +48,9 @@ class ApiSeriesRepository @Inject constructor(
     }
 
     override fun getFavoriteSeries(page: Int): Flow<List<Series>> = flow {
-        // En una implementación real, esto podría venir de una base de datos local
-        // que almacene los IDs de las series favoritas del usuario
-        // Por ahora, simplemente devolvemos series normales como ejemplo
+        // In a real implementation, this could come from a local database
+        // that stores the user's favorite series IDs.
+        // For now, just return normal series as an example.
         try {
             val apiKey = context.getString(R.string.apiKey)
             val response = api.getAllSeries(apiKey = apiKey, page = page)
@@ -70,7 +64,6 @@ class ApiSeriesRepository @Inject constructor(
     override suspend fun searchSeries(query: String): List<Series> {
         return try {
             val apiKey = context.getString(R.string.apiKey)
-
             val response = api.searchSeries(query, apiKey)
             response.results.map { it.toDomain() }
         } catch (e: Exception) {
@@ -79,6 +72,6 @@ class ApiSeriesRepository @Inject constructor(
     }
 
     override suspend fun insertSeries(series: List<Series>) {
-        // No se usa, ya que vienen desde la API
+        TODO("Not yet implemented")
     }
 }

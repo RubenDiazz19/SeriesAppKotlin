@@ -5,7 +5,6 @@ import com.example.peliculasserieskotlin.data.local.SeriesEntity
 import com.example.peliculasserieskotlin.domain.model.Series
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class RoomSeriesRepository @Inject constructor(
@@ -14,31 +13,13 @@ class RoomSeriesRepository @Inject constructor(
 
     override fun getSeries(page: Int, genre: String?): Flow<List<Series>> {
         return seriesDao.getAllSeries().map { entities ->
-            entities.map { entity ->
-                Series(
-                    id = entity.id,
-                    name = entity.name,
-                    posterUrl = entity.posterUrl,
-                    overview = entity.overview,
-                    voteAverage = entity.voteAverage,
-                    year = entity.year
-                )
-            }
+            entities.map { it.toDomain() }
         }
     }
 
     override fun getTopRatedSeries(page: Int): Flow<List<Series>> {
         return seriesDao.getTopRatedSeries().map { entities ->
-            entities.map { entity ->
-                Series(
-                    id = entity.id,
-                    name = entity.name,
-                    posterUrl = entity.posterUrl,
-                    overview = entity.overview,
-                    voteAverage = entity.voteAverage,
-                    year = entity.year
-                )
-            }
+            entities.map { it.toDomain() }
         }
     }
 
@@ -46,16 +27,7 @@ class RoomSeriesRepository @Inject constructor(
         // En una implementación real, esto obtendría las series marcadas como favoritas
         // Por ahora devolvemos todas las series como ejemplo
         return seriesDao.getAllSeries().map { entities ->
-            entities.map { entity ->
-                Series(
-                    id = entity.id,
-                    name = entity.name,
-                    posterUrl = entity.posterUrl,
-                    overview = entity.overview,
-                    voteAverage = entity.voteAverage,
-                    year = entity.year
-                )
-            }
+            entities.map { it.toDomain() }
         }
     }
 
@@ -64,9 +36,7 @@ class RoomSeriesRepository @Inject constructor(
     }
 
     override suspend fun searchSeries(query: String): List<Series> {
-        return seriesDao.searchSeries("%$query%").map {
-            it.toDomain()
-        }
+        return seriesDao.searchSeries("%$query%").map { it.toDomain() }
     }
 
     private fun SeriesEntity.toDomain(): Series {

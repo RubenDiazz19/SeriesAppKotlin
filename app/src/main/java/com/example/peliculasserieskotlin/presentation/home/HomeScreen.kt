@@ -32,19 +32,14 @@ import com.example.peliculasserieskotlin.domain.model.Series
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
-    val selectedCategory      by viewModel.selectedCategory.collectAsState()
-    val movies               by viewModel.movies.collectAsState()
-    val series               by viewModel.series.collectAsState()
-    val filteredMovies       by viewModel.filteredMovies
-    val filteredSeries       by viewModel.filteredSeries
-    val searchText           by remember { derivedStateOf { viewModel.searchText } }
-    val isSearching          by remember { derivedStateOf { viewModel.isSearchingRemotely } }
-    val isLoading            by remember { derivedStateOf { viewModel.isLoadingData } }
-    val sortBy               by viewModel.sortBy.collectAsState()
-    val inlineSearchActive   by viewModel.inlineSearchActive.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val sortBy by viewModel.sortBy.collectAsState()
+    val inlineSearchActive by viewModel.inlineSearchActive.collectAsState()
+    val showSearchBarForced by viewModel.showSearchBarForced.collectAsState()
+    val searchText = viewModel.searchText
 
     val listState = rememberLazyGridState()
-
 
     // Si el buscador flotante está activo, al Back: ocultarlo y limpiar texto
     BackHandler(enabled = inlineSearchActive) {
@@ -56,7 +51,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
         viewModel.onSearchQueryChanged("")
     }
 
-    // Detectar scroll-top para mostrar cabecera
     val showHeader by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex == 0 &&
@@ -64,23 +58,14 @@ fun HomeScreen(viewModel: HomeViewModel) {
         }
     }
 
-    // Items finales (sin ordenar localmente; la VM recupera ya ordenados)
-    val itemsToDisplay: List<Any> by remember(
-        selectedCategory, searchText,
-        movies, series,
-        filteredMovies, filteredSeries
-    ) {
-        derivedStateOf {
-            when {
-                selectedCategory == "Películas" && searchText.isNotBlank() -> filteredMovies
-                selectedCategory == "Películas" -> movies
-                searchText.isNotBlank() -> filteredSeries
-                else -> series
-            }
-        }
+    // Decide what to display based on category and search
+    val itemsToDisplay = when {
+        selectedCategory == "Películas" && searchText.isNotBlank() -> uiState.movies
+        selectedCategory == "Películas" -> uiState.movies
+        searchText.isNotBlank() -> uiState.series
+        else -> uiState.series
     }
 
-    // Paginación
     val shouldLoadMore by remember {
         derivedStateOf {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
@@ -104,7 +89,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 exit = fadeOut() + shrinkVertically()
             ) {
                 Column(
-                    modifier = Modifier.padding(top = 24.dp) // Espacio superior añadido aquí
+                    modifier = Modifier.padding(top = 24.dp)
                 ) {
                     // Dropdown centrado
                     Box(
@@ -144,7 +129,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             .padding(bottom = 4.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        //★ Valoración
                         IconButton(
                             onClick = { viewModel.setSortType(HomeViewModel.SortType.RATING) },
                             modifier = Modifier.size(24.dp)
@@ -158,7 +142,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             )
                         }
                         Spacer(Modifier.width(2.dp))
-                        //Orden Alfabético
                         IconButton(
                             onClick = { viewModel.setSortType(HomeViewModel.SortType.ALPHABETIC) },
                             modifier = Modifier.size(24.dp)
@@ -172,7 +155,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             )
                         }
                         Spacer(Modifier.width(2.dp))
-                        //❤ Favoritos
                         IconButton(
                             onClick = { viewModel.setSortType(HomeViewModel.SortType.FAVORITE) },
                             modifier = Modifier.size(24.dp)
@@ -190,33 +172,52 @@ fun HomeScreen(viewModel: HomeViewModel) {
             }
 
             // CUERPO
-            if (isSearching || isLoading) {
-                Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+            when {
+                uiState.isSearching || uiState.isLoading -> {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
-            } else {
-                LazyVerticalGrid(
-                    state   = listState,
-                    columns = GridCells.Adaptive(150.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(vertical = 4.dp)  // mismo padding arriba/abajo
-                ) {
-                    items(itemsToDisplay) { item ->
-                        when (item) {
-                            is Movie -> MovieSeriesItem(
-                                title    = item.title,
-                                imageUrl = item.posterUrl,
-                                rating   = item.voteAverage
-                            )
-                            is Series -> MovieSeriesItem(
-                                title    = item.name,
-                                imageUrl = item.posterUrl,
-                                rating   = item.voteAverage
-                            )
+                uiState.error != null -> {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Error: ${uiState.error}", color = Color.Red)
+                    }
+                }
+                itemsToDisplay.isEmpty() -> {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No hay resultados")
+                    }
+                }
+                else -> {
+                    LazyVerticalGrid(
+                        state   = listState,
+                        columns = GridCells.Adaptive(150.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        items(itemsToDisplay) { item ->
+                            when (item) {
+                                is Movie -> MovieSeriesItem(
+                                    title    = item.title,
+                                    imageUrl = item.posterUrl,
+                                    rating   = item.voteAverage
+                                )
+                                is Series -> MovieSeriesItem(
+                                    title    = item.name,
+                                    imageUrl = item.posterUrl,
+                                    rating   = item.voteAverage
+                                )
+                            }
                         }
                     }
                 }
