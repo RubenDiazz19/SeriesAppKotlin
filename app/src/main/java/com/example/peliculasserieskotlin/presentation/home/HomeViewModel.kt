@@ -4,10 +4,9 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import android.util.Log
 import androidx.lifecycle.viewModelScope
-import com.example.peliculasserieskotlin.data.repository.MovieRepository
-import com.example.peliculasserieskotlin.data.repository.SeriesRepository
-import com.example.peliculasserieskotlin.domain.model.Movie
-import com.example.peliculasserieskotlin.domain.model.Series
+import com.example.peliculasserieskotlin.data.repository.MediaRepository
+import com.example.peliculasserieskotlin.domain.model.MediaItem
+import com.example.peliculasserieskotlin.domain.model.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -17,8 +16,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val movieRepository: MovieRepository,
-    private val seriesRepository: SeriesRepository
+    private val mediaRepository: MediaRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -33,10 +31,8 @@ class HomeViewModel @Inject constructor(
     private val _inlineSearchActive = MutableStateFlow(false)
     val inlineSearchActive: StateFlow<Boolean> = _inlineSearchActive.asStateFlow()
 
-    private var currentMoviePage = 1
-    private var currentSeriesPage = 1
-    private var canPaginateMovies = true
-    private var canPaginateSeries = true
+    private var currentPage = 1
+    private var canPaginate = true
 
     var searchText by mutableStateOf("")
         private set
@@ -54,20 +50,8 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun loadInitialData() {
-        when (_sortBy.value) {
-            SortType.ALPHABETIC -> {
-                loadMovies()
-                loadSeries()
-            }
-            SortType.RATING -> {
-                loadTopRatedMovies()
-                loadTopRatedSeries()
-            }
-            SortType.FAVORITE -> {
-                loadFavoriteMovies()
-                loadFavoriteSeries()
-            }
-        }
+        val mediaType = if (selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
+        loadMedia(sortBy.value, mediaType)
     }
 
     private fun setupBackHandler() {
@@ -82,6 +66,9 @@ class HomeViewModel @Inject constructor(
 
     fun updateCategory(category: String) {
         _selectedCategory.value = category
+        // Recargar datos cuando cambia la categoría
+        resetPagination()
+        loadInitialData()
     }
 
     fun forceShowSearchBar() {
@@ -104,155 +91,111 @@ class HomeViewModel @Inject constructor(
         _inlineSearchActive.value = false
     }
 
-    private fun loadMovies() {
-        if (!canPaginateMovies) return
+    private fun loadMedia(sortType: SortType, mediaType: MediaType) {
+        if (!canPaginate) return
         updateLoading(true)
+        
         viewModelScope.launch {
-            movieRepository.getMovies(currentMoviePage, genre = null).collect { newMovies ->
-                if (newMovies.isEmpty()) {
-                    canPaginateMovies = false
-                } else {
-                    _uiState.update { it.copy(movies = it.movies + newMovies) }
+            when (sortType) {
+                SortType.ALPHABETIC -> {
+                    mediaRepository.getPopularMedia(currentPage, genre = null, mediaType).collect { newMedia ->
+                        handleMediaResult(newMedia)
+                    }
                 }
-                updateLoading(false)
+                SortType.RATING -> {
+                    mediaRepository.getTopRatedMedia(currentPage, mediaType).collect { newMedia ->
+                        handleMediaResult(newMedia)
+                    }
+                }
+                SortType.FAVORITE -> {
+                    mediaRepository.getDiscoverMedia(currentPage, mediaType).collect { newMedia ->
+                        handleMediaResult(newMedia)
+                    }
+                }
             }
         }
     }
 
-    private fun loadTopRatedMovies() {
-        if (!canPaginateMovies) return
-        updateLoading(true)
-        viewModelScope.launch {
-            movieRepository.getTopRatedMovies(currentMoviePage).collect { newMovies ->
-                if (newMovies.isEmpty()) {
-                    canPaginateMovies = false
-                } else {
-                    _uiState.update { it.copy(movies = it.movies + newMovies) }
-                }
-                updateLoading(false)
-            }
+    private fun handleMediaResult(newMedia: List<MediaItem>) {
+        if (newMedia.isEmpty()) {
+            canPaginate = false
+        } else {
+            _uiState.update { it.copy(mediaItems = it.mediaItems + newMedia) }
+            currentPage++
         }
-    }
-
-    private fun loadFavoriteMovies() {
-        if (!canPaginateMovies) return
-        updateLoading(true)
-        viewModelScope.launch {
-            movieRepository.getFavoriteMovies(currentMoviePage).collect { newMovies ->
-                if (newMovies.isEmpty()) {
-                    canPaginateMovies = false
-                } else {
-                    _uiState.update { it.copy(movies = it.movies + newMovies) }
-                }
-                updateLoading(false)
-            }
-        }
-    }
-
-    private fun loadSeries() {
-        if (!canPaginateSeries) return
-        updateLoading(true)
-        viewModelScope.launch {
-            seriesRepository.getSeries(currentSeriesPage, genre = null).collect { newSeries ->
-                if (newSeries.isEmpty()) {
-                    canPaginateSeries = false
-                } else {
-                    _uiState.update { it.copy(series = it.series + newSeries) }
-                }
-                updateLoading(false)
-            }
-        }
-    }
-
-    private fun loadTopRatedSeries() {
-        if (!canPaginateSeries) return
-        updateLoading(true)
-        viewModelScope.launch {
-            seriesRepository.getTopRatedSeries(currentSeriesPage).collect { newSeries ->
-                if (newSeries.isEmpty()) {
-                    canPaginateSeries = false
-                } else {
-                    _uiState.update { it.copy(series = it.series + newSeries) }
-                }
-                updateLoading(false)
-            }
-        }
-    }
-
-    private fun loadFavoriteSeries() {
-        if (!canPaginateSeries) return
-        updateLoading(true)
-        viewModelScope.launch {
-            seriesRepository.getFavoriteSeries(currentSeriesPage).collect { newSeries ->
-                if (newSeries.isEmpty()) {
-                    canPaginateSeries = false
-                } else {
-                    _uiState.update { it.copy(series = it.series + newSeries) }
-                }
-                updateLoading(false)
-            }
-        }
+        updateLoading(false)
     }
 
     fun loadNextPage() {
-        if (selectedCategory.value == "Películas" && canPaginateMovies) {
-            currentMoviePage++
-            when (sortBy.value) {
-                SortType.ALPHABETIC -> loadMovies()
-                SortType.RATING -> loadTopRatedMovies()
-                SortType.FAVORITE -> loadFavoriteMovies()
-            }
-        } else if (canPaginateSeries) {
-            currentSeriesPage++
-            when (sortBy.value) {
-                SortType.ALPHABETIC -> loadSeries()
-                SortType.RATING -> loadTopRatedSeries()
-                SortType.FAVORITE -> loadFavoriteSeries()
-            }
+        if (canPaginate) {
+            val type = if (selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
+            loadMedia(sortBy.value, type)
         }
     }
 
     fun onSearchQueryChanged(query: String) {
         searchText = query
-
-        val localMovies = uiState.value.movies.filter {
-            it.title.contains(query, ignoreCase = true)
-        }
-        val localSeries = uiState.value.series.filter {
-            it.name.contains(query, ignoreCase = true)
-        }
-
-        _uiState.update { it.copy(
-            movies = localMovies,
-            series = localSeries,
-            isSearching = true,
-            error = null
-        )}
-
+        
         searchJob?.cancel()
-
-        if (localMovies.isNotEmpty() || localSeries.isNotEmpty()) return
-
+        
+        if (query.isEmpty()) {
+            resetPagination()
+            loadInitialData()
+            return
+        }
+        
+        _uiState.update { it.copy(isSearching = true, error = null) }
+        
         searchJob = viewModelScope.launch {
-            delay(500)
-            searchRemotely(query)
+            // Aumentar el debounce para evitar demasiadas llamadas a la API
+            delay(800)
+            
+            // Primero buscar en la base de datos local
+            val type = if (selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
+            try {
+                val localResults = mediaRepository.searchMedia(query, 1, type)
+                
+                if (localResults.isNotEmpty()) {
+                    _uiState.update { it.copy(
+                        mediaItems = localResults,
+                        isSearching = false,
+                        error = null
+                    )}
+                } else {
+                    // Si no hay resultados locales, buscar remotamente
+                    searchRemotely(query)
+                }
+            } catch (e: Exception) {
+                searchRemotely(query)
+            }
         }
     }
 
     private fun searchRemotely(query: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isSearching = true, error = null) }
             try {
-                val remoteMovies = movieRepository.searchMovies(query)
-                val remoteSeries = seriesRepository.searchSeries(query)
+                val type = if (selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
+                val remoteMedia = mediaRepository.searchMedia(query, currentPage, type)
+                
+                // Guardar los resultados en la base de datos local para futuras búsquedas
+                if (remoteMedia.isNotEmpty()) {
+                    try {
+                        mediaRepository.insertMediaToLocalDb(remoteMedia)
+                    } catch (e: Exception) {
+                        // Ignorar errores al guardar en la base de datos
+                    }
+                }
+                
                 _uiState.update { it.copy(
-                    movies = remoteMovies,
-                    series = remoteSeries,
+                    mediaItems = remoteMedia,
                     isSearching = false,
                     error = null
                 )}
             } catch (e: Exception) {
-                _uiState.update { it.copy(isSearching = false, error = e.message) }
+                _uiState.update { it.copy(
+                    isSearching = false, 
+                    error = "Error al buscar: ${e.message}"
+                )}
             }
         }
     }
@@ -263,27 +206,17 @@ class HomeViewModel @Inject constructor(
         _sortBy.value = type
 
         // Reiniciar el estado
-        _uiState.value = HomeUiState()
-        currentMoviePage = 1
-        currentSeriesPage = 1
-        canPaginateMovies = true
-        canPaginateSeries = true
-
+        resetPagination()
+        
         // Cargar nuevos datos según el tipo de ordenación
-        when (type) {
-            SortType.ALPHABETIC -> {
-                loadMovies()
-                loadSeries()
-            }
-            SortType.RATING -> {
-                loadTopRatedMovies()
-                loadTopRatedSeries()
-            }
-            SortType.FAVORITE -> {
-                loadFavoriteMovies()
-                loadFavoriteSeries()
-            }
-        }
+        val mediaType = if (selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
+        loadMedia(type, mediaType)
+    }
+    
+    private fun resetPagination() {
+        _uiState.value = HomeUiState()
+        currentPage = 1
+        canPaginate = true
     }
 
     private fun updateLoading(isLoading: Boolean) {

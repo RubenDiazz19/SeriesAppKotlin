@@ -1,12 +1,14 @@
 package com.example.peliculasserieskotlin.di
 
 import android.content.Context
+import androidx.room.Room
 import com.example.peliculasserieskotlin.data.api.MovieApiService
 import com.example.peliculasserieskotlin.data.api.SeriesApiService
-import com.example.peliculasserieskotlin.data.repository.ApiMovieRepository
-import com.example.peliculasserieskotlin.data.repository.ApiSeriesRepository
-import com.example.peliculasserieskotlin.data.repository.MovieRepository
-import com.example.peliculasserieskotlin.data.repository.SeriesRepository
+import com.example.peliculasserieskotlin.data.local.AppDatabase
+import com.example.peliculasserieskotlin.data.local.MediaItemDao
+import com.example.peliculasserieskotlin.data.repository.ApiMediaRepository
+import com.example.peliculasserieskotlin.data.repository.MediaRepository
+import com.example.peliculasserieskotlin.data.repository.RoomMediaRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,9 +31,10 @@ object AppModule {
     @Singleton
     fun provideRetrofit(): Retrofit {
         val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)   // tiempo para conectar
-            .readTimeout(30, TimeUnit.SECONDS)      // tiempo para leer la respuesta
-            .writeTimeout(30, TimeUnit.SECONDS)     // tiempo para escribir si fuera POST
+            .connectTimeout(60, TimeUnit.SECONDS)   // Aumentar tiempo para conectar
+            .readTimeout(60, TimeUnit.SECONDS)      // Aumentar tiempo para leer la respuesta
+            .writeTimeout(60, TimeUnit.SECONDS)     // Aumentar tiempo para escribir
+            .retryOnConnectionFailure(true)         // Reintentar en caso de fallos
             .build()
 
         return Retrofit.Builder()
@@ -40,7 +43,6 @@ object AppModule {
             .client(client)
             .build()
     }
-
 
     @Singleton
     @Provides
@@ -54,21 +56,52 @@ object AppModule {
         return retrofit.create(SeriesApiService::class.java)
     }
 
+    // Provide AppDatabase
     @Singleton
     @Provides
-    fun provideMovieRepository(
-        api: MovieApiService,
-        @ApplicationContext context: Context
-    ): MovieRepository {
-        return ApiMovieRepository(api, context)
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "media_database"
+        ).build()
     }
 
+    // Provide MediaItemDao
     @Singleton
     @Provides
-    fun provideSeriesRepository(
-        api: SeriesApiService,
+    fun provideMediaItemDao(db: AppDatabase): MediaItemDao {
+        return db.mediaItemDao()
+    }
+
+    // Provide ApiMediaRepository
+    @Singleton
+    @Provides
+    fun provideApiMediaRepository(
+        movieApiService: MovieApiService,
+        seriesApiService: SeriesApiService,
         @ApplicationContext context: Context
-    ): SeriesRepository {
-        return ApiSeriesRepository(api, context)
+    ): ApiMediaRepository {
+        return ApiMediaRepository(movieApiService, seriesApiService, context)
+    }
+
+    // Provide RoomMediaRepository with MediaItemDao
+    @Singleton
+    @Provides
+    fun provideRoomMediaRepository(
+        mediaItemDao: MediaItemDao
+    ): RoomMediaRepository {
+        return RoomMediaRepository(mediaItemDao)
+    }
+
+    // Provide MediaRepository
+    @Singleton
+    @Provides
+    fun provideMediaRepository(
+        apiMediaRepository: ApiMediaRepository,
+        roomMediaRepository: RoomMediaRepository
+    ): MediaRepository {
+        // Por defecto, usamos la implementación de API
+        return apiMediaRepository
     }
 }

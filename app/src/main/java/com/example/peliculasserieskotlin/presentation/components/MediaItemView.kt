@@ -1,4 +1,4 @@
-package com.example.peliculasserieskotlin.presentation.home
+package com.example.peliculasserieskotlin.presentation.components
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
@@ -17,15 +17,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.peliculasserieskotlin.domain.model.MediaItem
 
 @SuppressLint("DefaultLocale")
 @Composable
-fun MovieSeriesItem(
-    title: String,
-    imageUrl: String,
-    rating: Double,
+fun MediaItemView(
+    mediaItem: MediaItem,
     isFavorite: Boolean = false,
     onFavoriteClick: (() -> Unit)? = null
 ) {
@@ -47,8 +47,8 @@ fun MovieSeriesItem(
                 modifier = Modifier.fillMaxSize()
             ) {
                 Image(
-                    painter = rememberAsyncImagePainter(model = imageUrl),
-                    contentDescription = "Poster of $title",
+                    painter = rememberAsyncImagePainter(model = mediaItem.posterUrl),
+                    contentDescription = "Poster of ${mediaItem.title}",
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(12.dp)),
@@ -69,7 +69,7 @@ fun MovieSeriesItem(
                     verticalAlignment = Alignment.Top
                 ) {
                     Text(
-                        text = "⭐ ${String.format("%.1f", rating)}",
+                        text = "⭐ ${String.format("%.1f", mediaItem.voteAverage)}",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodySmall
@@ -92,11 +92,11 @@ fun MovieSeriesItem(
         }
 
         Text(
-            text = title,
+            text = mediaItem.title,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             maxLines = 2,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp)

@@ -25,6 +25,8 @@ class MainActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 // Si el buscador inline está activo, ciérralo
+                // HomeScreen.kt's BackHandler should primarily handle this.
+                // This acts as a fallback or if HomeScreen is not in the foreground of back handling.
                 if (homeViewModel.inlineSearchActive.value) {
                     homeViewModel.hideInlineSearch()
                 } else {
@@ -36,21 +38,22 @@ class MainActivity : ComponentActivity() {
         })
 
         // Opcionalmente, puedes actualizar el callback según el estado del buscador
-        lifecycleScope.launch {
-            homeViewModel.inlineSearchActive.collectLatest { isActive ->
-                // Actualizamos el estado del callback según si el buscador está activo o no
-                onBackPressedDispatcher.addCallback(this@MainActivity, object : OnBackPressedCallback(isActive) {
-                    override fun handleOnBackPressed() {
-                        if (isActive) {
-                            homeViewModel.hideInlineSearch()
-                        } else {
-                            isEnabled = false
-                            onBackPressedDispatcher.onBackPressed()
-                        }
-                    }
-                })
-            }
-        }
+        // ESTE BLOQUE SE ELIMINA PORQUE AÑADE CALLBACKS REPETIDAMENTE Y ES REDUNDANTE
+        // lifecycleScope.launch {
+        //     homeViewModel.inlineSearchActive.collectLatest { isActive ->
+        //         // Actualizamos el estado del callback según si el buscador está activo o no
+        //         onBackPressedDispatcher.addCallback(this@MainActivity, object : OnBackPressedCallback(isActive) {
+        //             override fun handleOnBackPressed() {
+        //                 if (isActive) {
+        //                     homeViewModel.hideInlineSearch()
+        //                 } else {
+        //                     isEnabled = false
+        //                     onBackPressedDispatcher.onBackPressed()
+        //                 }
+        //             }
+        //         })
+        //     }
+        // }
 
         setContent {
             PeliculasSeriesKotlinTheme {

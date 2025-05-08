@@ -1,11 +1,9 @@
 package com.example.peliculasserieskotlin.presentation.home
 
-import com.example.peliculasserieskotlin.domain.model.Movie
-import com.example.peliculasserieskotlin.domain.model.Series
+import com.example.peliculasserieskotlin.domain.model.MediaItem
 
 data class HomeUiState(
-    val movies: List<Movie> = emptyList(),
-    val series: List<Series> = emptyList(),
+    val mediaItems: List<MediaItem> = emptyList(),
     val isLoading: Boolean = false,
     val isSearching: Boolean = false,
     val error: String? = null
