@@ -56,13 +56,10 @@ fun HomeScreen(viewModel: HomeViewModel) {
 
     val showHeader by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex == 0 &&
-                    listState.firstVisibleItemScrollOffset == 0
+            listState.firstVisibleItemIndex == 0 &&listState.firstVisibleItemScrollOffset == 0
         }
     }
 
-    // Decide what to display based on category
-    // The ViewModel's uiState.mediaItems should already be filtered by search text if applicable
     val targetMediaType = if (selectedCategory == "Películas") MediaType.MOVIE else MediaType.SERIES
     val itemsToDisplay = uiState.mediaItems.filter { it.type == targetMediaType }
 
@@ -82,12 +79,16 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            // CABECERA: dropdown + buscador + botones de orden
+            /*####################################################################*/
+            /* -----------------------  CABECERA  ------------------------------- */
+            /*####################################################################*/
             AnimatedVisibility(
+                // Solo muestra la cabecera si se está en la parte superior de la lista
                 visible = showHeader,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
+                //Insertamos la cabecera
                 HomeHeader(
                     selectedCategory = selectedCategory,
                     onCategorySelected = viewModel::updateCategory,
@@ -99,8 +100,11 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 )
             }
 
-            // CUERPO
+            /*#####################################################################*/
+            /* -----------------------  CONTENIDO  ------------------------------- */
+            /*#####################################################################*/
             when {
+                // Si se está buscando o cargando, muestra un indicador de progreso
                 uiState.isSearching || uiState.isLoading -> {
                     Box(
                         Modifier.fillMaxSize(),
@@ -109,14 +113,17 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         CircularProgressIndicator()
                     }
                 }
+                
                 uiState.error != null -> {
                     Box(
                         Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
+                        // Mostrar el mensaje de error
                         Text("Error: ${uiState.error}", color = Color.Red)
                     }
                 }
+                //Si no hay resultados, muestra un mensaje
                 itemsToDisplay.isEmpty() -> {
                     Box(
                         Modifier.fillMaxSize(),
@@ -125,6 +132,9 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         Text("No hay resultados")
                     }
                 }
+                /*#####################################################################*/
+                /* -----------------------  LISTADO  ------------------------------- */
+                /*#####################################################################*/
                 else -> {
                     LazyVerticalGrid(
                         state = listState,
@@ -134,14 +144,26 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             .padding(vertical = 4.dp)
                     ) {
                         items(itemsToDisplay) { item ->
-                            MediaItemView(mediaItem = item) // Asumiendo que onFavoriteClick se maneja dentro o no es necesario aquí
+                            // Observar el estado de favorito para cada elemento
+                            val isFavorite by viewModel.isFavorite(item.id, item.type)
+                                .collectAsState(initial = false)
+                            
+                            MediaItemView(
+                                mediaItem = item,
+                                isFavorite = isFavorite,
+                                onFavoriteClick = { mediaItem, newFavoriteState ->
+                                    viewModel.toggleFavorite(mediaItem, newFavoriteState)
+                                }
+                            )
                         }
                     }
                 }
             }
         }
 
-        // BUSCADOR INLINE
+        /*####################################################################*/
+        /* -----------------------  BUSCADOR  ------------------------------- */
+        /*####################################################################*/
         AnimatedVisibility(
             visible = inlineSearchActive,
             enter = fadeIn() + expandVertically(expandFrom = Alignment.CenterVertically),
@@ -159,7 +181,9 @@ fun HomeScreen(viewModel: HomeViewModel) {
             )
         }
 
-        // FAB para inline
+        /*#########################################################################*/
+        /* -----------------------  FLOATING BUTTON  ----------------------------- */
+        /*#########################################################################*/
         AnimatedVisibility(
             visible = !showHeader && !inlineSearchActive,
             enter = fadeIn(),

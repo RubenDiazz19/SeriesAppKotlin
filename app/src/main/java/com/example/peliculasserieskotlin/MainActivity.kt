@@ -37,23 +37,6 @@ class MainActivity : ComponentActivity() {
             }
         })
 
-        // Opcionalmente, puedes actualizar el callback según el estado del buscador
-        // ESTE BLOQUE SE ELIMINA PORQUE AÑADE CALLBACKS REPETIDAMENTE Y ES REDUNDANTE
-        // lifecycleScope.launch {
-        //     homeViewModel.inlineSearchActive.collectLatest { isActive ->
-        //         // Actualizamos el estado del callback según si el buscador está activo o no
-        //         onBackPressedDispatcher.addCallback(this@MainActivity, object : OnBackPressedCallback(isActive) {
-        //             override fun handleOnBackPressed() {
-        //                 if (isActive) {
-        //                     homeViewModel.hideInlineSearch()
-        //                 } else {
-        //                     isEnabled = false
-        //                     onBackPressedDispatcher.onBackPressed()
-        //                 }
-        //             }
-        //         })
-        //     }
-        // }
 
         setContent {
             PeliculasSeriesKotlinTheme {

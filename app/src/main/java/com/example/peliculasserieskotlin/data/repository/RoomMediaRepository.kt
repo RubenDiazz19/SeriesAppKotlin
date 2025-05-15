@@ -10,58 +10,68 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+/**
+ * Repositorio que gestiona el acceso a la base de datos local Room.
+ * Implementa MediaRepository para proporcionar acceso a contenido multimedia almacenado localmente.
+ */
 class RoomMediaRepository @Inject constructor(
     private val mediaItemDao: MediaItemDao
 ) : MediaRepository {
 
-    override fun getPopularMedia(page: Int, genre: String?, type: MediaType): Flow<List<MediaItem>> {
-        return mediaItemDao.getPopularMedia(type.name).map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
+    /**
+     * Obtiene medios populares desde la base de datos local.
+     */
+    override fun getPopularMedia(page: Int, genre: String?, type: MediaType): Flow<List<MediaItem>> =
+        mediaItemDao.getPopularMedia(type.name).map { it.map { e -> e.toDomain() } }
 
-    override fun getTopRatedMedia(page: Int, type: MediaType): Flow<List<MediaItem>> {
-        return mediaItemDao.getTopRatedMedia(type.name).map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
+    /**
+     * Obtiene medios mejor valorados desde la base de datos local.
+     */
+    override fun getTopRatedMedia(page: Int, type: MediaType): Flow<List<MediaItem>> =
+        mediaItemDao.getTopRatedMedia(type.name).map { it.map { e -> e.toDomain() } }
 
-    override fun getDiscoverMedia(page: Int, type: MediaType): Flow<List<MediaItem>> {
-        return mediaItemDao.getAllMedia(type.name).map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
+    /**
+     * Obtiene todos los medios de un tipo específico desde la base de datos local.
+     */
+    override fun getDiscoverMedia(page: Int, type: MediaType): Flow<List<MediaItem>> =
+        mediaItemDao.getAllMedia(type.name).map { it.map { e -> e.toDomain() } }
 
-    override suspend fun searchMedia(query: String, page: Int, type: MediaType): List<MediaItem> {
-        return mediaItemDao.searchMedia(query, type.name).map { it.toDomain() }
-    }
+    /**
+     * Busca medios por texto en la base de datos local.
+     */
+    override suspend fun searchMedia(query: String, page: Int, type: MediaType): List<MediaItem> =
+        mediaItemDao.searchMedia(query, type.name).map { it.toDomain() }
 
-    override suspend fun insertMediaToLocalDb(mediaItems: List<MediaItem>) {
+    /**
+     * Inserta elementos multimedia en la base de datos local.
+     */
+    override suspend fun insertMediaToLocalDb(mediaItems: List<MediaItem>) =
         mediaItemDao.insertMediaItems(mediaItems.map { it.toEntity() })
-    }
 
-    override fun getMediaFromLocalDb(type: MediaType): Flow<List<MediaItem>> {
-        return mediaItemDao.getAllMedia(type.name).map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
+    /**
+     * Obtiene todos los medios de un tipo específico desde la base de datos local.
+     */
+    override fun getMediaFromLocalDb(type: MediaType): Flow<List<MediaItem>> =
+        mediaItemDao.getAllMedia(type.name).map { it.map { e -> e.toDomain() } }
 
-
+    /**
+     * Obtiene todos los medios (películas y series) desde la base de datos local.
+     */
     override fun getAllMediaFromLocalDb(): Flow<List<MediaItem>> {
-        // Obtenemos tanto películas como series y las combinamos
         val movies = mediaItemDao.getAllMedia(MediaType.MOVIE.name)
         val series = mediaItemDao.getAllMedia(MediaType.SERIES.name)
-        
-        return movies.combine(series) { movieList, seriesList ->
-            movieList.map { it.toDomain() } + seriesList.map { it.toDomain() }
-        }
+        return movies.combine(series) { m, s -> m.map { it.toDomain() } + s.map { it.toDomain() } }
     }
 
-    suspend fun getMediaDetails(id: Int, type: MediaType): MediaItem? {
-        return mediaItemDao.getMediaById(id, type.name)?.toDomain()
-    }
+    /**
+     * Obtiene detalles de un elemento multimedia específico por ID y tipo.
+     */
+    suspend fun getMediaDetails(id: Int, type: MediaType): MediaItem? =
+        mediaItemDao.getMediaById(id, type.name)?.toDomain()
 
-    suspend fun saveMediaItems(items: List<MediaItem>) {
+    /**
+     * Guarda una lista de elementos multimedia en la base de datos local.
+     */
+    suspend fun saveMediaItems(items: List<MediaItem>) =
         mediaItemDao.insertMediaItems(items.map { it.toEntity() })
-    }
 }

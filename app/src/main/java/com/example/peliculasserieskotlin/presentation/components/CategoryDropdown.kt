@@ -10,6 +10,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+/**
+ * Componente que muestra la categoría seleccionada (Películas o Series) y permite
+ * cambiar entre ellas al hacer clic.
+ * 
+ * @param selectedCategory Categoría actualmente seleccionada
+ * @param onCategorySelected Callback que se invoca cuando se selecciona una nueva categoría
+ */
 @Composable
 fun CategoryDropdown(
     selectedCategory: String,

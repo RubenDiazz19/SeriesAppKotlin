@@ -6,22 +6,28 @@ import androidx.room.Index
 import com.example.peliculasserieskotlin.domain.model.MediaItem
 import com.example.peliculasserieskotlin.domain.model.MediaType
 
+/**
+ * Entidad que representa un elemento multimedia en la base de datos.
+ * Incluye índices para optimizar búsquedas por título y valoración.
+ */
 @Entity(
     tableName = "media_items",
     indices = [Index(value = ["title"]), Index(value = ["voteAverage"])]
 )
 data class MediaItemEntity(
     @PrimaryKey
-    val id: Int,
-    val title: String,
-    val overview: String,
-    val posterUrl: String,
-    val backdropUrl: String?,
-    val voteAverage: Double,
-    val mediaType: String // "MOVIE" o "SERIES"
+    val id: Int,               // ID único del elemento
+    val title: String,         // Título
+    val overview: String,      // Descripción
+    val posterUrl: String,     // URL del póster
+    val backdropUrl: String?,  // URL de imagen de fondo
+    val voteAverage: Double,   // Valoración media
+    val mediaType: String      // Tipo: "MOVIE" o "SERIES"
 )
 
-// Extensión para convertir MediaItemEntity a MediaItem
+/**
+ * Convierte una entidad a objeto de dominio.
+ */
 fun MediaItemEntity.toDomain(): MediaItem {
     return MediaItem(
         id = id,
@@ -34,7 +40,9 @@ fun MediaItemEntity.toDomain(): MediaItem {
     )
 }
 
-// Extensión para convertir MediaItem a MediaItemEntity
+/**
+ * Convierte un objeto de dominio a entidad.
+ */
 fun MediaItem.toEntity(): MediaItemEntity {
     return MediaItemEntity(
         id = id,

@@ -13,6 +13,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 
+/**
+ * Campo de búsqueda inline con estilo personalizado.
+ * Diseñado para integrarse en la interfaz de usuario de manera fluida.
+ *
+ * @param searchText Texto actual de búsqueda
+ * @param onSearchQueryChanged Callback cuando cambia el texto de búsqueda
+ * @param selectedCategory Categoría seleccionada para personalizar el placeholder
+ * @param modifier Modificador opcional para personalizar el componente
+ */
 @Composable
 fun InlineSearchTextField(
     searchText: String,

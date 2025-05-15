@@ -22,14 +22,29 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.peliculasserieskotlin.domain.model.MediaItem
 
+import androidx.compose.runtime.LaunchedEffect // Asegúrate de que este import esté presente o cubierto por androidx.compose.runtime.*
+
+/**
+ * Componente que muestra un elemento multimedia (película o serie).
+ * Incluye póster, título, puntuación y botón de favorito.
+ *
+ * @param mediaItem Elemento multimedia a mostrar
+ * @param isFavorite Indica si el elemento está marcado como favorito
+ * @param onFavoriteClick Callback cuando se hace clic en el botón de favorito
+ */
 @SuppressLint("DefaultLocale")
 @Composable
 fun MediaItemView(
     mediaItem: MediaItem,
     isFavorite: Boolean = false,
-    onFavoriteClick: (() -> Unit)? = null
+    onFavoriteClick: ((mediaItem: MediaItem, isFavorite: Boolean) -> Unit)? = null
 ) {
     var localFavorite by remember { mutableStateOf(isFavorite) }
+
+    // Sincroniza localFavorite con la propiedad isFavorite cuando esta cambie externamente
+    LaunchedEffect(isFavorite) {
+        localFavorite = isFavorite
+    }
 
     Column(
         modifier = Modifier
@@ -76,14 +91,15 @@ fun MediaItemView(
                     )
                     IconButton(
                         onClick = {
-                            localFavorite = !localFavorite
-                            onFavoriteClick?.invoke()
+                            val newFavoriteState = !localFavorite
+                            localFavorite = newFavoriteState // Actualiza el estado local para UI inmediata
+                            onFavoriteClick?.invoke(mediaItem, newFavoriteState) // Notifica al llamador con el item y el nuevo estado
                         },
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
                             imageVector = if (localFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = if (localFavorite) "Remove from favorites" else "Add to favorites",
+                            contentDescription = if (localFavorite) "Quitar de favoritos" else "Añadir a favoritos",
                             tint = if (localFavorite) Color.Red else Color.White
                         )
                     }

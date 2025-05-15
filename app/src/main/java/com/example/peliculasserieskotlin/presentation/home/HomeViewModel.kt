@@ -1,9 +1,11 @@
 package com.example.peliculasserieskotlin.presentation.home
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.example.peliculasserieskotlin.data.repository.FavoriteRepository
 import com.example.peliculasserieskotlin.data.repository.MediaRepository
 import com.example.peliculasserieskotlin.domain.model.MediaItem
 import com.example.peliculasserieskotlin.domain.model.MediaType
@@ -16,210 +18,199 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository,
+    private val favoriteRepository: FavoriteRepository
 ) : ViewModel() {
+
+    /*---------------------------  UI STATE  ---------------------------*/
+
+    data class HomeUiState(
+        val mediaItems: List<MediaItem> = emptyList(),
+        val isLoading:  Boolean         = false,
+        val isSearching:Boolean         = false,
+        val error:      String?         = null
+    )
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val _selectedCategory = MutableStateFlow("Películas")
+    enum class SortType { ALPHABETIC, RATING, FAVORITE }
+
+    private val _selectedCategory   = MutableStateFlow("Películas")
     val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
 
-    private val _showSearchBarForced = MutableStateFlow(false)
-    val showSearchBarForced: StateFlow<Boolean> = _showSearchBarForced.asStateFlow()
+    private val _sortBy   = MutableStateFlow(SortType.RATING)
+    val sortBy: StateFlow<SortType> = _sortBy.asStateFlow()
+
+    /*-------------  buscador (no cambia)  -------------*/
 
     private val _inlineSearchActive = MutableStateFlow(false)
     val inlineSearchActive: StateFlow<Boolean> = _inlineSearchActive.asStateFlow()
 
-    private var currentPage = 1
-    private var canPaginate = true
+    private val _showSearchBarForced = MutableStateFlow(false)
+    val showSearchBarForced: StateFlow<Boolean> = _showSearchBarForced.asStateFlow()
 
     var searchText by mutableStateOf("")
         private set
 
+    /*-------------  paginación y jobs  -------------*/
+
+    private var currentPage  = 1
+    private var canPaginate  = true
     private var searchJob: Job? = null
+    private var favoritesJob: Job? = null           // ⭐
 
-    enum class SortType { ALPHABETIC, RATING, FAVORITE }
+    init { loadInitialData() }
 
-    private val _sortBy = MutableStateFlow(SortType.RATING)
-    val sortBy: StateFlow<SortType> = _sortBy.asStateFlow()
+    /*###################################################################*/
+    /* -----------------------  FAVORITOS  ----------------------------- */
+    /*###################################################################*/
 
-    init {
-        loadInitialData()
-        setupBackHandler()
+    fun toggleFavorite(item: MediaItem, isFav: Boolean) = viewModelScope.launch {
+        if (isFav) favoriteRepository.addFavorite(item)
+        else       favoriteRepository.removeFavorite(item.id, item.type)
     }
+
+    fun isFavorite(id: Int, type: MediaType): Flow<Boolean> =
+        favoriteRepository.isFavorite(id, type)
+
+    /*###################################################################*/
+    /* ---------------------  CARGA DE CONTENIDO  ----------------------- */
+    /*###################################################################*/
 
     private fun loadInitialData() {
-        val mediaType = if (selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
-        loadMedia(sortBy.value, mediaType)
+        val mediaType = if (_selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
+        loadMedia(_sortBy.value, mediaType, refresh = true)
     }
 
-    private fun setupBackHandler() {
-        viewModelScope.launch {
-            inlineSearchActive.collect { isActive ->
-                if (isActive) {
-                    // La lógica para detectar la tecla back se maneja a nivel de actividad
-                }
-            }
+    fun loadNextPage() {
+        if (canPaginate) {
+            val mediaType = if (_selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
+            loadMedia(_sortBy.value, mediaType)
         }
     }
 
-    fun updateCategory(category: String) {
-        _selectedCategory.value = category
-        // Recargar datos cuando cambia la categoría
-        resetPagination()
-        loadInitialData()
-    }
+    private fun loadMedia(sortType: SortType, mediaType: MediaType, refresh: Boolean = false) {
+        /*--- si veníamos escuchando favoritos y cambiamos de filtro, cancelamos ---*/
+        if (sortType != SortType.FAVORITE) {
+            favoritesJob?.cancel()
+            favoritesJob = null
+        }
 
-    fun forceShowSearchBar() {
-        Log.d("FAB", "forceShowSearchBar() llamado")
-        _showSearchBarForced.value = true
-    }
-
-    fun resetShowSearchBar() {
-        Log.d("FAB", "resetShowSearchBar() llamado")
-        _showSearchBarForced.value = false
-    }
-
-    fun showInlineSearch() {
-        Log.d("FAB", "showInlineSearch() llamado")
-        _inlineSearchActive.value = true
-    }
-
-    fun hideInlineSearch() {
-        Log.d("FAB", "hideInlineSearch() llamado")
-        _inlineSearchActive.value = false
-    }
-
-    private fun loadMedia(sortType: SortType, mediaType: MediaType) {
-        if (!canPaginate) return
+        if (!canPaginate && !refresh && sortType != SortType.FAVORITE) return
         updateLoading(true)
-        
+
         viewModelScope.launch {
             when (sortType) {
                 SortType.ALPHABETIC -> {
-                    mediaRepository.getPopularMedia(currentPage, genre = null, mediaType).collect { newMedia ->
-                        handleMediaResult(newMedia)
-                    }
+                    mediaRepository.getPopularMedia(currentPage, null, mediaType)
+                        .collect { handleMediaResult(it, refresh) }
                 }
                 SortType.RATING -> {
-                    mediaRepository.getTopRatedMedia(currentPage, mediaType).collect { newMedia ->
-                        handleMediaResult(newMedia)
-                    }
+                    mediaRepository.getTopRatedMedia(currentPage, mediaType)
+                        .collect { handleMediaResult(it, refresh) }
                 }
                 SortType.FAVORITE -> {
-                    mediaRepository.getDiscoverMedia(currentPage, mediaType).collect { newMedia ->
-                        handleMediaResult(newMedia)
+                    if (favoritesJob == null) {
+                        canPaginate = false        // no hay paginación en favoritos
+                        favoritesJob = favoriteRepository.getFavoriteMedia(mediaType)
+                            .onEach { list ->
+                                _uiState.update { it.copy(mediaItems = list) }
+                                updateLoading(false)
+                            }
+                            .launchIn(viewModelScope)
                     }
                 }
             }
         }
     }
 
-    private fun handleMediaResult(newMedia: List<MediaItem>) {
-        if (newMedia.isEmpty()) {
+    private fun handleMediaResult(items: List<MediaItem>, refresh: Boolean) {
+        if (refresh) _uiState.value = _uiState.value.copy(mediaItems = emptyList())
+        if (items.isEmpty()) {
             canPaginate = false
         } else {
-            _uiState.update { it.copy(mediaItems = it.mediaItems + newMedia) }
+            _uiState.update { it.copy(mediaItems = it.mediaItems + items) }
             currentPage++
         }
         updateLoading(false)
     }
 
-    fun loadNextPage() {
-        if (canPaginate) {
-            val type = if (selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
-            loadMedia(sortBy.value, type)
-        }
-    }
+    /*###################################################################*/
+    /* -----------------------  BUSCADOR  ------------------------------ */
+    /*###################################################################*/
+
+    fun showInlineSearch()  { _inlineSearchActive.value = true;  _showSearchBarForced.value = false }
+    fun hideInlineSearch()  { _inlineSearchActive.value = false; _showSearchBarForced.value = false }
 
     fun onSearchQueryChanged(query: String) {
         searchText = query
-        
+        _showSearchBarForced.value = query.isNotBlank()
+
         searchJob?.cancel()
-        
-        if (query.isEmpty()) {
+        if (query.isBlank()) {
             resetPagination()
             loadInitialData()
             return
         }
-        
+
         _uiState.update { it.copy(isSearching = true, error = null) }
-        
+
         searchJob = viewModelScope.launch {
-            // Aumentar el debounce para evitar demasiadas llamadas a la API
             delay(800)
-            
-            // Primero buscar en la base de datos local
-            val type = if (selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
+
+            val type = if (_selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
             try {
-                val localResults = mediaRepository.searchMedia(query, 1, type)
-                
-                if (localResults.isNotEmpty()) {
-                    _uiState.update { it.copy(
-                        mediaItems = localResults,
-                        isSearching = false,
-                        error = null
-                    )}
+                val local = mediaRepository.searchMedia(query, 1, type)
+                if (local.isNotEmpty()) {
+                    _uiState.update { it.copy(mediaItems = local, isSearching = false) }
                 } else {
-                    // Si no hay resultados locales, buscar remotamente
-                    searchRemotely(query)
+                    searchRemote(query, type)
                 }
-            } catch (e: Exception) {
-                searchRemotely(query)
+            } catch (_: Exception) {
+                searchRemote(query, type)
             }
         }
     }
 
-    private fun searchRemotely(query: String) {
-        viewModelScope.launch {
-            try {
-                val type = if (selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
-                val remoteMedia = mediaRepository.searchMedia(query, currentPage, type)
-                
-                // Guardar los resultados en la base de datos local para futuras búsquedas
-                if (remoteMedia.isNotEmpty()) {
-                    try {
-                        mediaRepository.insertMediaToLocalDb(remoteMedia)
-                    } catch (e: Exception) {
-                        // Ignorar errores al guardar en la base de datos
-                    }
-                }
-                
-                _uiState.update { it.copy(
-                    mediaItems = remoteMedia,
-                    isSearching = false,
-                    error = null
-                )}
-            } catch (e: Exception) {
-                _uiState.update { it.copy(
-                    isSearching = false, 
-                    error = "Error al buscar: ${e.message}"
-                )}
+    private fun searchRemote(query: String, type: MediaType) = viewModelScope.launch {
+        try {
+            val remote = mediaRepository.searchMedia(query, page = 1, type = type)
+            if (remote.isNotEmpty()) {
+                try { mediaRepository.insertMediaToLocalDb(remote) } catch (_: Exception) {}
             }
+            _uiState.update { it.copy(mediaItems = remote, isSearching = false) }
+        } catch (e: Exception) {
+            _uiState.update { it.copy(isSearching = false, error = e.message) }
         }
+    }
+
+    /*###################################################################*/
+    /* -----------------------  HELPERS  ------------------------------- */
+    /*###################################################################*/
+
+    fun updateCategory(category: String) {
+        _selectedCategory.value = category
+        resetPagination()
+        loadInitialData()
     }
 
     fun setSortType(type: SortType) {
         if (_sortBy.value == type) return
-
         _sortBy.value = type
-
-        // Reiniciar el estado
         resetPagination()
-        
-        // Cargar nuevos datos según el tipo de ordenación
-        val mediaType = if (selectedCategory.value == "Películas") MediaType.MOVIE else MediaType.SERIES
-        loadMedia(type, mediaType)
+        loadInitialData()
     }
-    
+
     private fun resetPagination() {
         _uiState.value = HomeUiState()
         currentPage = 1
         canPaginate = true
+        favoritesJob?.cancel()
+        favoritesJob = null
+        hideInlineSearch()
     }
 
-    private fun updateLoading(isLoading: Boolean) {
-        _uiState.update { it.copy(isLoading = isLoading) }
-    }
+    private fun updateLoading(value: Boolean) =
+        _uiState.update { it.copy(isLoading = value) }
 }

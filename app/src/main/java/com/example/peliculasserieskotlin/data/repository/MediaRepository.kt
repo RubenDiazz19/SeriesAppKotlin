@@ -4,6 +4,11 @@ import com.example.peliculasserieskotlin.domain.model.MediaItem
 import com.example.peliculasserieskotlin.domain.model.MediaType
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Interfaz que define las operaciones básicas para acceder a datos de películas y series.
+ * Proporciona métodos para obtener contenido multimedia desde diferentes fuentes (API o base de datos local).
+ * Implementada por ApiMediaRepository y RoomMediaRepository para separar las fuentes de datos.
+ */
 interface MediaRepository {
 
     /**

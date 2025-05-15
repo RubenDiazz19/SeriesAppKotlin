@@ -4,9 +4,14 @@ import com.example.peliculasserieskotlin.data.api.model.MovieApiResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 
+/**
+ * Interfaz para acceder a los endpoints de películas de TMDB.
+ */
 interface MovieApiService {
 
-    // Metodo para obtener todas las películas
+    /**
+     * Obtiene listado de películas con filtros.
+     */
     @GET("discover/movie")
     suspend fun getAllMovies(
         @Query("api_key") apiKey: String,
@@ -14,7 +19,9 @@ interface MovieApiService {
         @Query("language") language: String = "es-ES"
     ): MovieApiResponse
 
-    // Metodo para buscar películas
+    /**
+     * Busca películas por texto.
+     */
     @GET("search/movie")
     suspend fun searchMovies(
         @Query("query") query: String,
@@ -23,7 +30,9 @@ interface MovieApiService {
         @Query("language") language: String = "es-ES"
     ): MovieApiResponse
 
-    // Metodo para obtener las películas más valoradas
+    /**
+     * Obtiene películas mejor valoradas.
+     */
     @GET("movie/top_rated")
     suspend fun getTopRatedMovies(
         @Query("api_key") apiKey: String,
@@ -31,7 +40,9 @@ interface MovieApiService {
         @Query("language") language: String = "es-ES"
     ): MovieApiResponse
 
-    // Metodo para obtener las películas populares (podría usarse para favoritos)
+    /**
+     * Obtiene películas populares.
+     */
     @GET("movie/popular")
     suspend fun getPopularMovies(
         @Query("api_key") apiKey: String,

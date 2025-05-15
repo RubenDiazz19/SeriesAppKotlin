@@ -16,6 +16,20 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.peliculasserieskotlin.presentation.home.HomeViewModel // Asegúrate que esta ruta es correcta
 
+/**
+ * Cabecera de la pantalla principal que incluye:
+ * - Selector de categoría (Películas/Series)
+ * - Campo de búsqueda (opcional)
+ * - Botones para ordenar el contenido
+ *
+ * @param selectedCategory Categoría actualmente seleccionada
+ * @param onCategorySelected Callback cuando se cambia la categoría
+ * @param searchText Texto actual de búsqueda
+ * @param onSearchQueryChanged Callback cuando cambia el texto de búsqueda
+ * @param sortBy Tipo de ordenación actual
+ * @param onSortTypeSelected Callback cuando se selecciona un tipo de ordenación
+ * @param inlineSearchActive Indica si la búsqueda inline está activa
+ */
 @Composable
 fun HomeHeader(
     selectedCategory: String,

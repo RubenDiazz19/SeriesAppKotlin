@@ -1,22 +1,29 @@
 package com.example.peliculasserieskotlin.data.api.model
 
-import com.example.peliculasserieskotlin.domain.model.MediaItem // Cambio aquí
-import com.example.peliculasserieskotlin.domain.model.MediaType // Nuevo import
+import com.example.peliculasserieskotlin.domain.model.MediaItem
+import com.example.peliculasserieskotlin.domain.model.MediaType
 
+/**
+ * Modelo que representa una serie desde la API.
+ * Mapea la respuesta JSON de series.
+ */
 data class SeriesApiModel(
-    val id: Int?,
-    val name: String?, // Las series usan 'name'
-    val first_air_date: String?,
-    val overview: String?,
-    val poster_path: String?,
-    val vote_average: Double?
+    val id: Int?,                // ID único de la serie
+    val name: String?,           // Nombre de la serie
+    val first_air_date: String?, // Fecha de primera emisión
+    val overview: String?,       // Descripción de la serie
+    val poster_path: String?,    // Ruta al póster
+    val vote_average: Double?    // Puntuación (0-10)
 )
 
-fun SeriesApiModel.toDomain(): MediaItem { // Cambio el tipo de retorno a MediaItem
-
-    return MediaItem( // Cambio aquí para retornar MediaItem
+/**
+ * Convierte un SeriesApiModel a un MediaItem del dominio.
+ * Unifica series y películas bajo un mismo modelo.
+ */
+fun SeriesApiModel.toDomain(): MediaItem {
+    return MediaItem(
         id = id ?: 0,
-        title = name ?: "Serie desconocida", // Mapeamos 'name' a 'title'
+        title = name ?: "Serie desconocida",
         overview = overview ?: "Sin descripción",
         posterUrl = poster_path?.let { "https://image.tmdb.org/t/p/w500$it" } ?: "",
         voteAverage = vote_average ?: 0.0,
@@ -25,6 +32,9 @@ fun SeriesApiModel.toDomain(): MediaItem { // Cambio el tipo de retorno a MediaI
     )
 }
 
+/**
+ * Respuesta paginada de la API de series.
+ */
 data class SeriesApiResponse(
-    val results: List<SeriesApiModel>
+    val results: List<SeriesApiModel>  // Lista de series
 )

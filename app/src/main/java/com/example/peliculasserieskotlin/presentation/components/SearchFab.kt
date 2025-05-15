@@ -13,6 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+/**
+ * Botón flotante de acción (FAB) para iniciar una búsqueda.
+ * Diseñado con un icono de lupa y estilo personalizado.
+ *
+ * @param onClick Callback cuando se hace clic en el botón
+ * @param modifier Modificador opcional para personalizar el componente
+ */
 @Composable
 fun SearchFab(
     onClick: () -> Unit,

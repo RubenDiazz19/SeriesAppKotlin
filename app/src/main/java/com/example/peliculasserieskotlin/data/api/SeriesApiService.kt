@@ -4,8 +4,13 @@ import com.example.peliculasserieskotlin.data.api.model.SeriesApiResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 
+/**
+ * Interfaz para acceder a los endpoints de series de TMDB.
+ */
 interface SeriesApiService {
-    //Metodo para obtener todas las series
+    /**
+     * Obtiene listado de series con filtros.
+     */
     @GET("discover/tv")
     suspend fun getAllSeries(
         @Query("api_key") apiKey: String,
@@ -13,7 +18,9 @@ interface SeriesApiService {
         @Query("language") language: String = "es-ES"
     ): SeriesApiResponse
 
-    //Metodo para buscar series
+    /**
+     * Busca series por texto.
+     */
     @GET("search/tv")
     suspend fun searchSeries(
         @Query("query") query: String,
@@ -22,7 +29,9 @@ interface SeriesApiService {
         @Query("language") language: String = "es-ES"
     ): SeriesApiResponse
 
-    //Metodo para obtener las series más valoradas
+    /**
+     * Obtiene series mejor valoradas.
+     */
     @GET("tv/top_rated")
     suspend fun getTopRatedSeries(
         @Query("api_key") apiKey: String,
@@ -30,7 +39,9 @@ interface SeriesApiService {
         @Query("language") language: String = "es-ES"
     ): SeriesApiResponse
 
-    //Metodo para obtener las series populares (podría usarse para favoritos)
+    /**
+     * Obtiene series populares.
+     */
     @GET("tv/popular")
     suspend fun getPopularSeries(
         @Query("api_key") apiKey: String,
