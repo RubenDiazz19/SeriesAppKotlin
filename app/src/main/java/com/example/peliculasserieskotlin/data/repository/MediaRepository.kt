@@ -2,7 +2,9 @@ package com.example.peliculasserieskotlin.data.repository
 
 import com.example.peliculasserieskotlin.domain.model.MediaItem
 import com.example.peliculasserieskotlin.domain.model.MediaType
+import com.example.peliculasserieskotlin.presentation.home.HomeViewModel
 import kotlinx.coroutines.flow.Flow
+import androidx.paging.PagingData // Asegúrate de importar PagingData
 
 /**
  * Interfaz que define las operaciones básicas para acceder a datos de películas y series.
@@ -69,4 +71,13 @@ interface MediaRepository {
      * @return Un Flow que emite una lista de todos los MediaItem cacheados.
      */
     fun getAllMediaFromLocalDb(): Flow<List<MediaItem>>
+
+    /**
+     * Va cargando las peliculas/series mediante paging 3
+     */
+    fun getPagedMedia(
+        mediaType: MediaType, // Nombre de parámetro corregido y tipo especificado
+        sortType: HomeViewModel.SortType, // Nombre de parámetro corregido y tipo especificado
+        searchQuery: String? // Nombre de parámetro corregido
+    ): Flow<PagingData<MediaItem>> // Tipo de retorno corregido
 }

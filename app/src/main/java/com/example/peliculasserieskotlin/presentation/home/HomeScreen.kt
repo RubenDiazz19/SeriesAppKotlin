@@ -6,32 +6,22 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-// import androidx.compose.foundation.border // Unused
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
-// import androidx.compose.foundation.shape.CircleShape // Unused
-// import androidx.compose.foundation.shape.RoundedCornerShape // Unused
-// import androidx.compose.foundation.text.KeyboardOptions // Unused
-import androidx.compose.material.icons.Icons // Used by components, but not directly here for specific icons
-// import androidx.compose.material.icons.filled.Edit // Unused
-// import androidx.compose.material.icons.filled.Favorite // Unused
-// import androidx.compose.material.icons.filled.Search // Unused
-// import androidx.compose.material.icons.filled.Star // Unused
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-// import androidx.compose.ui.text.input.ImeAction // Unused
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.peliculasserieskotlin.domain.model.MediaType
-// import com.example.peliculasserieskotlin.presentation.components.CategoryDropdown // Commented out, can be removed
 import com.example.peliculasserieskotlin.presentation.components.MediaItemView
 import com.example.peliculasserieskotlin.presentation.components.HomeHeader
 import com.example.peliculasserieskotlin.presentation.components.InlineSearchTextField
 import com.example.peliculasserieskotlin.presentation.components.SearchFab
-
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
@@ -43,6 +33,10 @@ fun HomeScreen(viewModel: HomeViewModel) {
     val searchText = viewModel.searchText
 
     val listState = rememberLazyGridState()
+
+    // Obtener datos paginados o favoritos según el tipo de ordenación
+    val pagedItems = viewModel.pagedMediaItems.collectAsState().value.collectAsLazyPagingItems()
+    val favoriteItems by viewModel.favoriteMediaItems.collectAsState()
 
     // Si el buscador flotante está activo, al Back: ocultarlo y limpiar texto
     BackHandler(enabled = inlineSearchActive) {
@@ -56,22 +50,11 @@ fun HomeScreen(viewModel: HomeViewModel) {
 
     val showHeader by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex == 0 &&listState.firstVisibleItemScrollOffset == 0
+            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
         }
     }
 
     val targetMediaType = if (selectedCategory == "Películas") MediaType.MOVIE else MediaType.SERIES
-    val itemsToDisplay = uiState.mediaItems.filter { it.type == targetMediaType }
-
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            last >= listState.layoutInfo.totalItemsCount - 3
-        }
-    }
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) viewModel.loadNextPage()
-    }
 
     Box(Modifier.fillMaxSize()) {
         Column(
@@ -83,12 +66,10 @@ fun HomeScreen(viewModel: HomeViewModel) {
             /* -----------------------  CABECERA  ------------------------------- */
             /*####################################################################*/
             AnimatedVisibility(
-                // Solo muestra la cabecera si se está en la parte superior de la lista
                 visible = showHeader,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
-                //Insertamos la cabecera
                 HomeHeader(
                     selectedCategory = selectedCategory,
                     onCategorySelected = viewModel::updateCategory,
@@ -104,8 +85,8 @@ fun HomeScreen(viewModel: HomeViewModel) {
             /* -----------------------  CONTENIDO  ------------------------------- */
             /*#####################################################################*/
             when {
-                // Si se está buscando o cargando, muestra un indicador de progreso
-                uiState.isSearching || uiState.isLoading -> {
+                // Si se está buscando, muestra un indicador de progreso
+                uiState.isSearching -> {
                     Box(
                         Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -119,22 +100,49 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        // Mostrar el mensaje de error
                         Text("Error: ${uiState.error}", color = Color.Red)
                     }
                 }
-                //Si no hay resultados, muestra un mensaje
-                itemsToDisplay.isEmpty() -> {
-                    Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No hay resultados")
+                
+                // Mostrar favoritos
+                sortBy == HomeViewModel.SortType.FAVORITE -> {
+                    val itemsToDisplay = favoriteItems.filter { it.type == targetMediaType }
+                    
+                    if (itemsToDisplay.isEmpty()) {
+                        Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("No hay favoritos")
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            state = listState,
+                            columns = GridCells.Adaptive(150.dp),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            items(
+                                items = itemsToDisplay,
+                                key = { it.id }
+                            ) { item ->
+                                val isFavorite by viewModel.isFavorite(item.id, item.type)
+                                    .collectAsState(initial = false)
+                                
+                                MediaItemView(
+                                    mediaItem = item,
+                                    isFavorite = isFavorite,
+                                    onFavoriteClick = { mediaItem, newFavoriteState ->
+                                        viewModel.toggleFavorite(mediaItem, newFavoriteState)
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
-                /*#####################################################################*/
-                /* -----------------------  LISTADO  ------------------------------- */
-                /*#####################################################################*/
+                
+                // Mostrar contenido paginado
                 else -> {
                     LazyVerticalGrid(
                         state = listState,
@@ -143,19 +151,71 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             .fillMaxSize()
                             .padding(vertical = 4.dp)
                     ) {
-                        items(itemsToDisplay) { item ->
-                            // Observar el estado de favorito para cada elemento
-                            val isFavorite by viewModel.isFavorite(item.id, item.type)
-                                .collectAsState(initial = false)
-                            
-                            MediaItemView(
-                                mediaItem = item,
-                                isFavorite = isFavorite,
-                                onFavoriteClick = { mediaItem, newFavoriteState ->
-                                    viewModel.toggleFavorite(mediaItem, newFavoriteState)
-                                }
-                            )
+                        items(pagedItems.itemCount) { index ->
+                            val item = pagedItems[index]
+                            if (item != null && item.type == targetMediaType) {
+                                val isFavorite by viewModel.isFavorite(item.id, item.type)
+                                    .collectAsState(initial = false)
+                                
+                                MediaItemView(
+                                    mediaItem = item,
+                                    isFavorite = isFavorite,
+                                    onFavoriteClick = { mediaItem, newFavoriteState ->
+                                        viewModel.toggleFavorite(mediaItem, newFavoriteState)
+                                    }
+                                )
+                            }
                         }
+                        
+                        // Mostrar indicador de carga al final
+                        when (pagedItems.loadState.append) {
+                            is LoadState.Loading -> {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                                    }
+                                }
+                            }
+                            is LoadState.Error -> {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            "Error al cargar más elementos",
+                                            color = Color.Red,
+                                            modifier = Modifier.padding(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            else -> {}
+                        }
+                    }
+                    
+                    // Mostrar indicador de carga inicial
+                    when (pagedItems.loadState.refresh) {
+                        is LoadState.Loading -> {
+                            Box(
+                                Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                        is LoadState.Error -> {
+                            Box(
+                                Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Error al cargar datos", color = Color.Red)
+                            }
+                        }
+                        else -> {}
                     }
                 }
             }
@@ -172,7 +232,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 .align(Alignment.TopCenter)
                 .zIndex(10f)
                 .padding(horizontal = 32.dp, vertical = 16.dp)
-                .padding(top = 48.dp) // Ajusta este padding según sea necesario después de mover la cabecera
+                .padding(top = 48.dp)
         ) {
             InlineSearchTextField(
                 searchText = searchText,
@@ -190,11 +250,10 @@ fun HomeScreen(viewModel: HomeViewModel) {
             exit = fadeOut(),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp) // Este padding ya estaba, mantenlo o ajústalo
+                .padding(16.dp)
         ) {
             SearchFab(
                 onClick = { viewModel.showInlineSearch() }
-                // El modifier para alinear y padding se aplica en AnimatedVisibility
             )
         }
     }

@@ -1,12 +1,15 @@
 package com.example.peliculasserieskotlin.data.repository
 
+import androidx.paging.PagingData
 import com.example.peliculasserieskotlin.data.local.MediaItemDao
 import com.example.peliculasserieskotlin.data.local.toDomain
 import com.example.peliculasserieskotlin.data.local.toEntity
 import com.example.peliculasserieskotlin.domain.model.MediaItem
 import com.example.peliculasserieskotlin.domain.model.MediaType
+import com.example.peliculasserieskotlin.presentation.home.HomeViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
@@ -74,4 +77,16 @@ class RoomMediaRepository @Inject constructor(
      */
     suspend fun saveMediaItems(items: List<MediaItem>) =
         mediaItemDao.insertMediaItems(items.map { it.toEntity() })
+
+    /**
+     * Room no necesita paginación compleja, devuelve datos vacíos
+     */
+    override fun getPagedMedia(
+        mediaType: MediaType,
+        sortType: HomeViewModel.SortType,
+        searchQuery: String?
+    ): Flow<PagingData<MediaItem>> {
+        // Room repository no maneja paginación de API
+        return flowOf(PagingData.empty())
+    }
 }

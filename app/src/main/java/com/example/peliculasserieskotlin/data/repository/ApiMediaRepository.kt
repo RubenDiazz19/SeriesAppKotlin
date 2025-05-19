@@ -1,27 +1,27 @@
 package com.example.peliculasserieskotlin.data.repository
 
-import android.content.Context // Importar Context
+import android.content.Context
 import android.util.Log
-import com.example.peliculasserieskotlin.R // Importar R para acceder a apiKey
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import com.example.peliculasserieskotlin.R
 import com.example.peliculasserieskotlin.data.api.MovieApiService
 import com.example.peliculasserieskotlin.data.api.SeriesApiService
 import com.example.peliculasserieskotlin.data.api.model.toDomain
+import com.example.peliculasserieskotlin.data.paging.MediaPagingSource
 import com.example.peliculasserieskotlin.domain.model.MediaItem
 import com.example.peliculasserieskotlin.domain.model.MediaType
+import com.example.peliculasserieskotlin.presentation.home.HomeViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
-
 import dagger.hilt.android.qualifiers.ApplicationContext
 
-/**
- * Repositorio que obtiene datos de películas y series desde la API externa.
- * Implementa MediaRepository para proporcionar acceso a contenido multimedia.
- */
 class ApiMediaRepository @Inject constructor(
     private val movieApiService: MovieApiService,
     private val seriesApiService: SeriesApiService,
-    @ApplicationContext private val context: Context // Contexto para obtener apiKey
+    @ApplicationContext private val context: Context
 ) : MediaRepository {
 
     /**
@@ -127,5 +127,34 @@ class ApiMediaRepository @Inject constructor(
     override fun getAllMediaFromLocalDb(): Flow<List<MediaItem>> {
         // ApiMediaRepository no se encarga de la base de datos local.
         throw UnsupportedOperationException("ApiMediaRepository no puede leer todos los items de la base de datos local.")
+    }
+
+    /**
+     * Implementación de Paging 3 para carga eficiente
+     */
+    override fun getPagedMedia(
+        mediaType: MediaType,
+        sortType: HomeViewModel.SortType,
+        searchQuery: String?
+    ): Flow<PagingData<MediaItem>> {
+        val apiKey = context.getString(R.string.apiKey)
+        
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false,
+                prefetchDistance = 3
+            ),
+            pagingSourceFactory = {
+                MediaPagingSource(
+                    movieApiService = movieApiService,
+                    seriesApiService = seriesApiService,
+                    apiKey = apiKey,
+                    mediaType = mediaType,
+                    sortType = sortType,
+                    searchQuery = searchQuery
+                )
+            }
+        ).flow
     }
 }

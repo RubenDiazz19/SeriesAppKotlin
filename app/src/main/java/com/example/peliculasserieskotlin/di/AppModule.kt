@@ -78,12 +78,12 @@ object AppModule {
     fun provideMediaRepository(
         apiRepo: ApiMediaRepository,
         roomRepo: RoomMediaRepository
-    ): MediaRepository = apiRepo   // usa la API por defecto
+    ): MediaRepository = apiRepo
 
     @Provides @Singleton
     fun provideFavoriteRepository(
         favoriteDao: FavoriteDao,
-        mediaItemDao: MediaItemDao          // 👈 añadido
+        mediaItemDao: MediaItemDao
     ): FavoriteRepository =
         FavoriteRepository(favoriteDao, mediaItemDao)
 }

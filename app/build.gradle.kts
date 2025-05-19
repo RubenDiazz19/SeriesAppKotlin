@@ -84,8 +84,8 @@ dependencies {
     implementation(libs.gson)
 
     // Paging 3
-    implementation(libs.androidx.paging.runtime)
-
+    implementation(libs.androidx.paging.runtime.ktx)
+    implementation(libs.androidx.paging.compose.v321)
 
     // Testing
     testImplementation(libs.junit)
@@ -97,4 +97,7 @@ dependencies {
     // Debug tools
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+
+
 }
