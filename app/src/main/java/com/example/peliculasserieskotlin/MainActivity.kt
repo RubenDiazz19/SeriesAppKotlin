@@ -5,13 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.lifecycle.lifecycleScope
-import com.example.peliculasserieskotlin.presentation.home.HomeViewModel
-import com.example.peliculasserieskotlin.presentation.home.HomeScreen
+import com.example.peliculasserieskotlin.features.home.HomeViewModel
+import com.example.peliculasserieskotlin.features.home.HomeScreen
 import com.example.peliculasserieskotlin.ui.theme.PeliculasSeriesKotlinTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
