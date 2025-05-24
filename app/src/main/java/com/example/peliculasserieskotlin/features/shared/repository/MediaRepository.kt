@@ -3,6 +3,7 @@ package com.example.peliculasserieskotlin.features.shared.repository
 import androidx.paging.PagingData
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
+import com.example.peliculasserieskotlin.core.model.MediaDetailItem  // Cambiar esta importación
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
 import kotlinx.coroutines.flow.Flow
 
@@ -80,4 +81,18 @@ interface MediaRepository {
         sortType: HomeViewModel.SortType, // Nombre de parámetro corregido y tipo especificado
         searchQuery: String? // Nombre de parámetro corregido
     ): Flow<PagingData<MediaItem>> // Tipo de retorno corregido
+
+    /**
+     * Obtiene los detalles completos de una película específica.
+     * @param movieId ID de la película
+     * @return Un MediaDetailItem con todos los detalles o null si hay error
+     */
+    suspend fun getMovieDetails(movieId: Int): MediaDetailItem?
+    
+    /**
+     * Obtiene los detalles completos de una serie específica.
+     * @param seriesId ID de la serie
+     * @return Un MediaDetailItem con todos los detalles o null si hay error
+     */
+    suspend fun getSeriesDetails(seriesId: Int): MediaDetailItem?
 }

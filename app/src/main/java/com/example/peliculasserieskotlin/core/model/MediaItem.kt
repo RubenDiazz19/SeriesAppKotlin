@@ -10,12 +10,12 @@ enum class MediaType {
 /**
  * Modelo que representa un elemento multimedia (película o serie).
  */
-data class MediaItem(
-    val id: Int,               // ID único
-    val title: String,         // Título
-    val overview: String,      // Descripción
-    val posterUrl: String,     // URL del póster
-    val backdropUrl: String?,  // URL de imagen de fondo
-    val voteAverage: Double,   // Puntuación (0-10)
-    val type: MediaType        // Tipo (MOVIE o SERIES)
+open class MediaItem(
+    open val id: Int,               // ID único
+    open val title: String,         // Título
+    open val overview: String,      // Descripción
+    open val posterUrl: String,     // URL del póster
+    open val backdropUrl: String?,  // URL de imagen de fondo
+    open val voteAverage: Double,   // Puntuación (0-10)
+    open val type: MediaType        // Tipo (MOVIE o SERIES)
 )

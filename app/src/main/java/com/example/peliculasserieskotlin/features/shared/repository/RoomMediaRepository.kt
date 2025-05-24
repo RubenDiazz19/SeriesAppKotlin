@@ -4,6 +4,7 @@ import androidx.paging.PagingData
 import com.example.peliculasserieskotlin.core.database.MediaItemDao
 import com.example.peliculasserieskotlin.core.database.toDomain
 import com.example.peliculasserieskotlin.core.database.toEntity
+import com.example.peliculasserieskotlin.core.model.MediaDetailItem
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
@@ -88,5 +89,63 @@ class RoomMediaRepository @Inject constructor(
     ): Flow<PagingData<MediaItem>> {
         // Room repository no maneja paginación de API
         return flowOf(PagingData.Companion.empty())
+    }
+
+    override suspend fun getMovieDetails(movieId: Int): MediaDetailItem? {
+        // Room no almacena todos los detalles, así que convertimos un MediaItem básico
+        // o devolvemos null si no se encuentra
+        val basicItem = mediaItemDao.getMediaById(movieId, MediaType.MOVIE.name)?.toDomain() ?: return null
+        
+        // Convertimos el MediaItem básico a un MediaDetailItem con campos adicionales nulos
+        return MediaDetailItem(
+            id = basicItem.id,
+            title = basicItem.title,
+            overview = basicItem.overview,
+            posterUrl = basicItem.posterUrl,
+            backdropUrl = basicItem.backdropUrl,
+            voteAverage = basicItem.voteAverage,
+            type = basicItem.type,
+            originalTitle = null,
+            releaseDate = null,
+            voteCount = null,
+            runtime = null,
+            budget = null,
+            revenue = null,
+            tagline = null,
+            status = null,
+            genres = emptyList(),
+            productionCompanies = emptyList(),
+            productionCountries = emptyList(),
+            spokenLanguages = emptyList()
+        )
+    }
+
+    override suspend fun getSeriesDetails(seriesId: Int): MediaDetailItem? {
+        // Room no almacena todos los detalles, así que convertimos un MediaItem básico
+        // o devolvemos null si no se encuentra
+        val basicItem = mediaItemDao.getMediaById(seriesId, MediaType.SERIES.name)?.toDomain() ?: return null
+        
+        // Convertimos el MediaItem básico a un MediaDetailItem con campos adicionales nulos
+        return MediaDetailItem(
+            id = basicItem.id,
+            title = basicItem.title,
+            overview = basicItem.overview,
+            posterUrl = basicItem.posterUrl,
+            backdropUrl = basicItem.backdropUrl,
+            voteAverage = basicItem.voteAverage,
+            type = basicItem.type,
+            originalTitle = null,
+            releaseDate = null,
+            voteCount = null,
+            runtime = null,
+            budget = null,
+            revenue = null,
+            tagline = null,
+            status = null,
+            genres = emptyList(),
+            productionCompanies = emptyList(),
+            productionCountries = emptyList(),
+            spokenLanguages = emptyList()
+        )
     }
 }

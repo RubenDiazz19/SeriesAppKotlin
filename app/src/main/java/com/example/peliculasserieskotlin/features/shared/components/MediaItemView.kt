@@ -3,12 +3,13 @@ package com.example.peliculasserieskotlin.features.shared.components
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,22 +23,13 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.peliculasserieskotlin.core.model.MediaItem
 
-import androidx.compose.runtime.LaunchedEffect // Asegúrate de que este import esté presente o cubierto por androidx.compose.runtime.*
-
-/**
- * Componente que muestra un elemento multimedia (película o serie).
- * Incluye póster, título, puntuación y botón de favorito.
- *
- * @param mediaItem Elemento multimedia a mostrar
- * @param isFavorite Indica si el elemento está marcado como favorito
- * @param onFavoriteClick Callback cuando se hace clic en el botón de favorito
- */
 @SuppressLint("DefaultLocale")
 @Composable
 fun MediaItemView(
     mediaItem: MediaItem,
     isFavorite: Boolean = false,
-    onFavoriteClick: ((mediaItem: MediaItem, isFavorite: Boolean) -> Unit)? = null
+    onFavoriteClick: ((mediaItem: MediaItem, isFavorite: Boolean) -> Unit)? = null,
+    onItemClick: ((mediaItem: MediaItem) -> Unit)? = null // NUEVO parámetro
 ) {
     var localFavorite by remember { mutableStateOf(isFavorite) }
 
@@ -54,7 +46,8 @@ fun MediaItemView(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp),
+                .height(240.dp)
+                .clickable { onItemClick?.invoke(mediaItem) }, // Detectar pulsación
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
@@ -92,8 +85,8 @@ fun MediaItemView(
                     IconButton(
                         onClick = {
                             val newFavoriteState = !localFavorite
-                            localFavorite = newFavoriteState // Actualiza el estado local para UI inmediata
-                            onFavoriteClick?.invoke(mediaItem, newFavoriteState) // Notifica al llamador con el item y el nuevo estado
+                            localFavorite = newFavoriteState
+                            onFavoriteClick?.invoke(mediaItem, newFavoriteState)
                         },
                         modifier = Modifier.size(24.dp)
                     ) {

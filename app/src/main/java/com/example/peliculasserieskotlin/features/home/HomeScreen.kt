@@ -22,9 +22,13 @@ import com.example.peliculasserieskotlin.features.shared.components.MediaItemVie
 import com.example.peliculasserieskotlin.features.shared.components.HomeHeader
 import com.example.peliculasserieskotlin.features.shared.components.InlineSearchTextField
 import com.example.peliculasserieskotlin.features.shared.components.SearchFab
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel) {
+fun HomeScreen(
+    viewModel: HomeViewModel,
+    onNavigateToDetail: (Int, MediaType) -> Unit
+) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val sortBy by viewModel.sortBy.collectAsState()
@@ -34,16 +38,20 @@ fun HomeScreen(viewModel: HomeViewModel) {
 
     val listState = rememberLazyGridState()
 
-    // Obtener datos paginados o favoritos según el tipo de ordenación
     val pagedItems = viewModel.pagedMediaItems.collectAsState().value.collectAsLazyPagingItems()
     val favoriteItems by viewModel.favoriteMediaItems.collectAsState()
 
-    // Si el buscador flotante está activo, al Back: ocultarlo y limpiar texto
+    LaunchedEffect(Unit) {
+        viewModel.navigateToDetail.collectLatest { (id, type) ->
+            onNavigateToDetail(id, type)
+        }
+    }
+
     BackHandler(enabled = inlineSearchActive) {
         viewModel.hideInlineSearch()
         viewModel.onSearchQueryChanged("")
     }
-    // Si no hay buscador flotante y hay texto en la cabecera, al Back: limpiar texto
+
     BackHandler(enabled = !inlineSearchActive && searchText.isNotBlank()) {
         viewModel.onSearchQueryChanged("")
     }
@@ -62,9 +70,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            /*####################################################################*/
-            /* -----------------------  CABECERA  ------------------------------- */
-            /*####################################################################*/
             AnimatedVisibility(
                 visible = showHeader,
                 enter = fadeIn() + expandVertically(),
@@ -81,11 +86,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                 )
             }
 
-            /*#####################################################################*/
-            /* -----------------------  CONTENIDO  ------------------------------- */
-            /*#####################################################################*/
             when {
-                // Si se está buscando, muestra un indicador de progreso
                 uiState.isSearching -> {
                     Box(
                         Modifier.fillMaxSize(),
@@ -94,7 +95,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         CircularProgressIndicator()
                     }
                 }
-                
+
                 uiState.error != null -> {
                     Box(
                         Modifier.fillMaxSize(),
@@ -103,11 +104,10 @@ fun HomeScreen(viewModel: HomeViewModel) {
                         Text("Error: ${uiState.error}", color = Color.Red)
                     }
                 }
-                
-                // Mostrar favoritos
+
                 sortBy == HomeViewModel.SortType.FAVORITE -> {
                     val itemsToDisplay = favoriteItems.filter { it.type == targetMediaType }
-                    
+
                     if (itemsToDisplay.isEmpty()) {
                         Box(
                             Modifier.fillMaxSize(),
@@ -129,20 +129,20 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             ) { item ->
                                 val isFavorite by viewModel.isFavorite(item.id, item.type)
                                     .collectAsState(initial = false)
-                                
+
                                 MediaItemView(
                                     mediaItem = item,
                                     isFavorite = isFavorite,
                                     onFavoriteClick = { mediaItem, newFavoriteState ->
                                         viewModel.toggleFavorite(mediaItem, newFavoriteState)
-                                    }
+                                    },
+                                    onItemClick = { viewModel.onMediaItemSelected(it) } // NUEVO
                                 )
                             }
                         }
                     }
                 }
-                
-                // Mostrar contenido paginado
+
                 else -> {
                     LazyVerticalGrid(
                         state = listState,
@@ -156,18 +156,18 @@ fun HomeScreen(viewModel: HomeViewModel) {
                             if (item != null && item.type == targetMediaType) {
                                 val isFavorite by viewModel.isFavorite(item.id, item.type)
                                     .collectAsState(initial = false)
-                                
+
                                 MediaItemView(
                                     mediaItem = item,
                                     isFavorite = isFavorite,
                                     onFavoriteClick = { mediaItem, newFavoriteState ->
                                         viewModel.toggleFavorite(mediaItem, newFavoriteState)
-                                    }
+                                    },
+                                    onItemClick = { viewModel.onMediaItemSelected(it) } // NUEVO
                                 )
                             }
                         }
-                        
-                        // Mostrar indicador de carga al final
+
                         when (pagedItems.loadState.append) {
                             is LoadState.Loading -> {
                                 item {
@@ -179,6 +179,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                                     }
                                 }
                             }
+
                             is LoadState.Error -> {
                                 item {
                                     Box(
@@ -193,11 +194,11 @@ fun HomeScreen(viewModel: HomeViewModel) {
                                     }
                                 }
                             }
+
                             else -> {}
                         }
                     }
-                    
-                    // Mostrar indicador de carga inicial
+
                     when (pagedItems.loadState.refresh) {
                         is LoadState.Loading -> {
                             Box(
@@ -207,6 +208,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
                                 CircularProgressIndicator()
                             }
                         }
+
                         is LoadState.Error -> {
                             Box(
                                 Modifier.fillMaxSize(),
@@ -215,15 +217,13 @@ fun HomeScreen(viewModel: HomeViewModel) {
                                 Text("Error al cargar datos", color = Color.Red)
                             }
                         }
+
                         else -> {}
                     }
                 }
             }
         }
 
-        /*####################################################################*/
-        /* -----------------------  BUSCADOR  ------------------------------- */
-        /*####################################################################*/
         AnimatedVisibility(
             visible = inlineSearchActive,
             enter = fadeIn() + expandVertically(expandFrom = Alignment.CenterVertically),
@@ -241,9 +241,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
             )
         }
 
-        /*#########################################################################*/
-        /* -----------------------  FLOATING BUTTON  ----------------------------- */
-        /*#########################################################################*/
         AnimatedVisibility(
             visible = !showHeader && !inlineSearchActive,
             enter = fadeIn(),
@@ -258,5 +255,3 @@ fun HomeScreen(viewModel: HomeViewModel) {
         }
     }
 }
-
-

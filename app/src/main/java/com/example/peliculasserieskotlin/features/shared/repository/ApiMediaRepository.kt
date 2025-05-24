@@ -6,11 +6,13 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.example.peliculasserieskotlin.R
+import com.example.peliculasserieskotlin.core.model.MediaDetailItem
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
 import com.example.peliculasserieskotlin.core.paging.MediaPagingSource
 import com.example.peliculasserieskotlin.data.MovieApiService
 import com.example.peliculasserieskotlin.data.SeriesApiService
+import com.example.peliculasserieskotlin.data.model.toDetailedDomain
 import com.example.peliculasserieskotlin.data.model.toDomain
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -178,5 +180,36 @@ class ApiMediaRepository @Inject constructor(
                 )
             }
         ).flow
+    }
+
+    // En ApiMediaRepository.kt
+    override suspend fun getMovieDetails(movieId: Int): MediaDetailItem? {
+        val apiKey = context.getString(R.string.apiKey)
+        return try {
+            val response = movieApiService.getMovieDetails(
+                movieId = movieId,
+                apiKey = apiKey,
+                appendToResponse = "videos,credits"
+            )
+            response.toDetailedDomain()
+        } catch (e: Exception) {
+            Log.e("ApiMediaRepository", "Error en getMovieDetails: ${e.message}")
+            null
+        }
+    }
+
+    override suspend fun getSeriesDetails(seriesId: Int): MediaDetailItem? {
+        val apiKey = context.getString(R.string.apiKey)
+        return try {
+            val response = seriesApiService.getSeriesDetails(
+                seriesId = seriesId,
+                apiKey = apiKey,
+                appendToResponse = "videos,credits"
+            )
+            response.toDetailedDomain()
+        } catch (e: Exception) {
+            Log.e("ApiMediaRepository", "Error en getSeriesDetails: ${e.message}")
+            null
+        }
     }
 }

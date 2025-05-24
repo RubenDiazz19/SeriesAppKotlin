@@ -35,7 +35,6 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    // Renombrar para evitar conflicto
     enum class SortType { ALPHABETIC, RATING, FAVORITE }
 
     private val _selectedCategory = MutableStateFlow("Películas")
@@ -43,8 +42,6 @@ class HomeViewModel @Inject constructor(
 
     private val _sortBy = MutableStateFlow(SortType.RATING)
     val sortBy: StateFlow<SortType> = _sortBy.asStateFlow()
-
-    /*-------------  buscador  -------------*/
 
     private val _inlineSearchActive = MutableStateFlow(false)
     val inlineSearchActive: StateFlow<Boolean> = _inlineSearchActive.asStateFlow()
@@ -55,21 +52,15 @@ class HomeViewModel @Inject constructor(
     var searchText by mutableStateOf("")
         private set
 
-    /*-------------  Paging Data  -------------*/
-
     private val _searchQuery = MutableStateFlow<String?>(null)
-    
-    // Flow para datos paginados de API
-    // Asegurarnos de que todas las referencias usen el tipo correcto
+
     val pagedMediaItems: StateFlow<Flow<PagingData<MediaItem>>> = combine(
         _selectedCategory,
         _sortBy,
         _searchQuery
     ) { category, sort, query ->
         val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
-        
         if (sort == SortType.FAVORITE) {
-            // Para favoritos, usar el flow normal
             flowOf(PagingData.empty())
         } else {
             mediaRepository.getPagedMedia(mediaType, sort, query)
@@ -81,7 +72,6 @@ class HomeViewModel @Inject constructor(
         initialValue = flowOf(PagingData.empty())
     )
 
-    // Flow para favoritos (sin paginación)
     val favoriteMediaItems: StateFlow<List<MediaItem>> = combine(
         _selectedCategory,
         _sortBy
@@ -101,10 +91,6 @@ class HomeViewModel @Inject constructor(
 
     private var searchJob: Job? = null
 
-    /*###################################################################*/
-    /* -----------------------  FAVORITOS  ----------------------------- */
-    /*###################################################################*/
-
     fun toggleFavorite(item: MediaItem, isFav: Boolean) = viewModelScope.launch {
         if (isFav) favoriteRepository.addFavorite(item)
         else favoriteRepository.removeFavorite(item.id, item.type)
@@ -112,10 +98,6 @@ class HomeViewModel @Inject constructor(
 
     fun isFavorite(id: Int, type: MediaType): Flow<Boolean> =
         favoriteRepository.isFavorite(id, type)
-
-    /*###################################################################*/
-    /* -----------------------  BUSCADOR  ------------------------------ */
-    /*###################################################################*/
 
     fun showInlineSearch() {
         _inlineSearchActive.value = true
@@ -132,9 +114,10 @@ class HomeViewModel @Inject constructor(
         _showSearchBarForced.value = query.isNotBlank()
 
         searchJob?.cancel()
-        
+
         if (query.isBlank()) {
             _searchQuery.value = null
+            _uiState.update { it.copy(isSearching = false) }
             return
         }
 
@@ -147,21 +130,27 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /*###################################################################*/
-    /* -----------------------  HELPERS  ------------------------------- */
-    /*###################################################################*/
-
     fun updateCategory(category: String) {
         _selectedCategory.value = category
-        // El cambio se propaga automáticamente a través de los flows combinados
     }
 
     fun setSortType(type: SortType) {
         if (_sortBy.value == type) return
         _sortBy.value = type
-        // El cambio se propaga automáticamente a través de los flows combinados
     }
 
     private fun updateLoading(value: Boolean) =
         _uiState.update { it.copy(isLoading = value) }
+
+    /*----------- NAVEGACIÓN DETALLE -----------*/
+    private val _navigateToDetail = MutableSharedFlow<Pair<Int, MediaType>>()
+    val navigateToDetail = _navigateToDetail.asSharedFlow()
+
+    fun onMediaItemSelected(mediaItem: MediaItem) {
+        viewModelScope.launch {
+            _navigateToDetail.emit(mediaItem.id to mediaItem.type)
+        }
+    }
+
+
 }

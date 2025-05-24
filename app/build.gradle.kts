@@ -64,14 +64,12 @@ dependencies {
     implementation(libs.compose.runtime.livedata)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.coil.compose)
-
-
+    implementation(libs.androidx.navigation.compose.v277)
 
     // Hilt
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
-
 
     // Room
     implementation(libs.room.runtime)
@@ -97,7 +95,5 @@ dependencies {
     // Debug tools
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-
 
 }

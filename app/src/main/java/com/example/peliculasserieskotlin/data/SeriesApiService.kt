@@ -1,7 +1,9 @@
 package com.example.peliculasserieskotlin.data
 
 import com.example.peliculasserieskotlin.data.model.SeriesApiResponse
+import com.example.peliculasserieskotlin.data.model.SeriesDetailResponse
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
@@ -48,4 +50,20 @@ interface SeriesApiService {
         @Query("page") page: Int = 1,
         @Query("language") language: String = "es-ES"
     ): SeriesApiResponse
+
+    /**
+     * Obtiene los detalles completos de una serie específica.
+     * @param seriesId ID de la serie a consultar
+     * @param apiKey Clave de API para TMDB
+     * @param language Idioma de los resultados (por defecto es-ES)
+     * @param appendToResponse Información adicional a incluir (videos, créditos, etc.)
+     * @return Detalles completos de la serie
+     */
+    @GET("tv/{series_id}")
+    suspend fun getSeriesDetails(
+        @Path("series_id") seriesId: Int,
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String = "es-ES",
+        @Query("append_to_response") appendToResponse: String? = null
+    ): SeriesDetailResponse
 }
