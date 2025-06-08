@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.example.peliculasserieskotlin.core.model.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.example.peliculasserieskotlin.core.util.Result
 
 @HiltViewModel
 class MediaDetailViewModel @Inject constructor(
@@ -26,27 +27,50 @@ class MediaDetailViewModel @Inject constructor(
 
     fun loadDetail(id: Int, type: MediaType) {
         viewModelScope.launch {
-            val detailItem = when (type) {
+            val result = when (type) {
                 MediaType.MOVIE  -> mediaRepository.getMovieDetails(id)
-                //TODO(): Implementar getSeriesDetails
-                MediaType.SERIES -> mediaRepository.getSeriesDetails(id)   // ← temporal
+                MediaType.SERIES -> mediaRepository.getSeriesDetails(id)
             }
-
-            _uiState.value = detailItem?.let { item ->
-                MediaDetailUiState(
-                    title                = item.title,
-                    tagline              = item.tagline,
-                    overview             = item.overview,
-                    posterUrl            = item.posterUrl,
-                    originalTitle        = item.originalTitle,
-                    releaseDate          = formatDate(item.releaseDate),
-                    voteAverageFormatted = "${item.voteAverage} / 10\n(${item.voteCount} votos)",
-                    runtimeFormatted     = item.runtime?.let { "$it minutos" },
-                    budgetFormatted      = item.budget?.let  { "$${"%,d".format(it)}" },
-                    revenueFormatted     = item.revenue?.let { "$${"%,d".format(it)}" },
-                    status               = item.status,
-                    genres               = item.genres
-                )
+            _uiState.value = when (result) {
+                is Result.Success -> {
+                    when (val item = result.data) {
+                        is MediaDetailItem.MovieDetailItem -> MediaDetailUiState(
+                            title                = item.title,
+                            tagline              = item.tagline,
+                            overview             = item.overview,
+                            posterUrl            = item.posterUrl,
+                            originalTitle        = item.originalTitle,
+                            releaseDate          = formatDate(item.releaseDate),
+                            voteAverageFormatted = "${item.voteAverage} / 10\n(${item.voteCount} votos)",
+                            runtimeFormatted     = item.runtime?.let { "$it minutos" },
+                            budgetFormatted      = item.budget?.let  { "$${"%,d".format(it)}" },
+                            revenueFormatted     = item.revenue?.let { "$${"%,d".format(it)}" },
+                            status               = item.status,
+                            genres               = item.genres,
+                            error                = null
+                        )
+                        is MediaDetailItem.SeriesDetailItem -> MediaDetailUiState(
+                            title                = item.title,
+                            tagline              = item.tagline,
+                            overview             = item.overview,
+                            posterUrl            = item.posterUrl,
+                            originalTitle        = item.originalTitle,
+                            releaseDate          = formatDate(item.firstAirDate),
+                            voteAverageFormatted = "${item.voteAverage} / 10\n(${item.voteCount} votos)",
+                            runtimeFormatted     = item.runtime?.let { "$it minutos" },
+                            budgetFormatted      = null,
+                            revenueFormatted     = null,
+                            status               = item.status,
+                            genres               = item.genres,
+                            numberOfSeasons      = item.numberOfSeasons,
+                            numberOfEpisodes     = item.numberOfEpisodes,
+                            error                = null
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    MediaDetailUiState(error = result.exception.localizedMessage ?: "Error desconocido")
+                }
             }
         }
     }

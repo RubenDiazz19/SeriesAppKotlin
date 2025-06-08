@@ -6,6 +6,7 @@ import com.example.peliculasserieskotlin.core.model.MediaType
 import com.example.peliculasserieskotlin.core.model.MediaDetailItem  // Cambiar esta importación
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
 import kotlinx.coroutines.flow.Flow
+import com.example.peliculasserieskotlin.core.util.Result
 
 /**
  * Interfaz que define las operaciones básicas para acceder a datos de películas y series.
@@ -85,14 +86,14 @@ interface MediaRepository {
     /**
      * Obtiene los detalles completos de una película específica.
      * @param movieId ID de la película
-     * @return Un MediaDetailItem con todos los detalles o null si hay error
+     * @return Un Result con MediaDetailItem o Error
      */
-    suspend fun getMovieDetails(movieId: Int): MediaDetailItem?
+    suspend fun getMovieDetails(movieId: Int): Result<MediaDetailItem>
     
     /**
      * Obtiene los detalles completos de una serie específica.
      * @param seriesId ID de la serie
-     * @return Un MediaDetailItem con todos los detalles o null si hay error
+     * @return Un Result con MediaDetailItem o Error
      */
-    suspend fun getSeriesDetails(seriesId: Int): MediaDetailItem?
+    suspend fun getSeriesDetails(seriesId: Int): Result<MediaDetailItem>
 }

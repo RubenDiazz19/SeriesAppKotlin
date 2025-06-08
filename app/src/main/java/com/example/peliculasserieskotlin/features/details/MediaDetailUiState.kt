@@ -15,5 +15,8 @@ data class MediaDetailUiState(
     val budgetFormatted: String? = null,
     val revenueFormatted: String? = null,
     val status: String? = null,
-    val genres: List<GenreItem>? = null
+    val genres: List<GenreItem>? = null,
+    val numberOfSeasons: Int? = null,      // Para series
+    val numberOfEpisodes: Int? = null,     // Para series
+    val error: String? = null
 )

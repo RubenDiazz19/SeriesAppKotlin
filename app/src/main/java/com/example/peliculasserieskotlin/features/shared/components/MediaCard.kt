@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
+import com.example.peliculasserieskotlin.features.shared.components.rememberFavoriteState
 
 /**
  * Componente reutilizable para mostrar una tarjeta de media (película o serie)
@@ -97,12 +98,11 @@ private fun GridMediaCard(
     showTitle: Boolean,
     modifier: Modifier = Modifier
 ) {
-    var localFavorite by remember { mutableStateOf(isFavorite) }
-
-    // Sincroniza localFavorite con la propiedad isFavorite cuando esta cambie externamente
-    LaunchedEffect(isFavorite) {
-        localFavorite = isFavorite
-    }
+    val (localFavorite, toggleFavorite) = rememberFavoriteState(
+        mediaItem = mediaItem,
+        isFavorite = isFavorite,
+        onFavoriteToggle = { item, fav -> onFavoriteClick?.invoke(item, fav) }
+    )
 
     Column(
         modifier = modifier
@@ -153,11 +153,7 @@ private fun GridMediaCard(
                     
                     if (onFavoriteClick != null) {
                         IconButton(
-                            onClick = {
-                                val newFavoriteState = !localFavorite
-                                localFavorite = newFavoriteState
-                                onFavoriteClick.invoke(mediaItem, newFavoriteState)
-                            },
+                            onClick = toggleFavorite,
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
@@ -218,7 +214,11 @@ private fun RowMediaCard(
     showRating: Boolean,
     modifier: Modifier = Modifier
 ) {
-    var localFavorite by remember { mutableStateOf(isFavorite) }
+    val (localFavorite, toggleFavorite) = rememberFavoriteState(
+        mediaItem = mediaItem,
+        isFavorite = isFavorite,
+        onFavoriteToggle = { item, fav -> onFavoriteClick?.invoke(item, fav) }
+    )
 
     Card(
         modifier = modifier
@@ -298,11 +298,7 @@ private fun RowMediaCard(
                         .align(Alignment.CenterVertically)
                 ) {
                     IconButton(
-                        onClick = {
-                            val newFavoriteState = !localFavorite
-                            localFavorite = newFavoriteState
-                            onFavoriteClick.invoke(mediaItem, newFavoriteState)
-                        }
+                        onClick = toggleFavorite
                     ) {
                         Icon(
                             imageVector = if (localFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,

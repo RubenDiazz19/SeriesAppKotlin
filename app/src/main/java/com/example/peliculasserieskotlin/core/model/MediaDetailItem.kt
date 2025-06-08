@@ -1,36 +1,63 @@
 package com.example.peliculasserieskotlin.core.model
 
-/**
- * Modelo extendido que contiene todos los detalles de un elemento multimedia (película o serie).
- * Hereda de MediaItem para mantener compatibilidad con el código existente.
- */
-data class MediaDetailItem(
-    // Propiedades heredadas - deben ser declaradas con override y val
-    override val id: Int,
-    override val title: String,
-    override val overview: String,
-    override val posterUrl: String,
-    override val backdropUrl: String?, // Coincide con MediaItem (String?)
-    override val voteAverage: Double,   // Coincide con MediaItem (Double)
-    override val type: MediaType,
+// Modelo base para detalles de media
+sealed class MediaDetailItem(
+    open val id: Int,
+    open val title: String,
+    open val overview: String,
+    open val posterUrl: String,
+    open val backdropUrl: String?,
+    open val voteAverage: Double,
+    open val type: MediaType
+) {
+    data class MovieDetailItem(
+        override val id: Int,
+        override val title: String,
+        override val overview: String,
+        override val posterUrl: String,
+        override val backdropUrl: String?,
+        override val voteAverage: Double,
+        override val type: MediaType = MediaType.MOVIE,
 
-    // Propiedades adicionales de detalle
-    val originalTitle: String?,
-    val releaseDate: String?,
-    val voteCount: Int?,
-    val runtime: Int?,              // Duración en minutos
-    val budget: Long?,
-    val revenue: Long?,
-    val genres: List<GenreItem>?, // Este es el campo correcto para los géneros
-    val productionCompanies: List<ProductionCompanyItem>?,
-    val productionCountries: List<ProductionCountryItem>?,
-    val spokenLanguages: List<SpokenLanguageItem>?,
-    val status: String?,
-    val tagline: String?
-) : MediaItem(id, title, overview, posterUrl, backdropUrl, voteAverage, type)
+        val originalTitle: String?,
+        val releaseDate: String?,
+        val voteCount: Int?,
+        val runtime: Int?,
+        val budget: Long?,
+        val revenue: Long?,
+        val genres: List<GenreItem>?,
+        val productionCompanies: List<ProductionCompanyItem>?,
+        val productionCountries: List<ProductionCountryItem>?,
+        val spokenLanguages: List<SpokenLanguageItem>?,
+        val status: String?,
+        val tagline: String?
+    ) : MediaDetailItem(id, title, overview, posterUrl, backdropUrl, voteAverage, type)
 
-// Clases de datos para los campos anidados (si aún no existen en otro lugar)
-// Asegúrate de que estas definiciones no entren en conflicto con otras existentes.
+    data class SeriesDetailItem(
+        override val id: Int,
+        override val title: String,
+        override val overview: String,
+        override val posterUrl: String,
+        override val backdropUrl: String?,
+        override val voteAverage: Double,
+        override val type: MediaType = MediaType.SERIES,
+
+        val originalTitle: String?,
+        val firstAirDate: String?,
+        val voteCount: Int?,
+        val runtime: Int?, // Duración promedio de episodio
+        val numberOfSeasons: Int?,
+        val numberOfEpisodes: Int?,
+        val genres: List<GenreItem>?,
+        val productionCompanies: List<ProductionCompanyItem>?,
+        val productionCountries: List<ProductionCountryItem>?,
+        val spokenLanguages: List<SpokenLanguageItem>?,
+        val status: String?,
+        val tagline: String?
+    ) : MediaDetailItem(id, title, overview, posterUrl, backdropUrl, voteAverage, type)
+}
+
+// Modelos auxiliares (pueden estar en archivos separados si ya existen)
 data class GenreItem(val id: Int, val name: String)
 data class ProductionCompanyItem(val name: String, val logoPath: String?, val originCountry: String)
 data class ProductionCountryItem(val iso_3166_1: String, val name: String)

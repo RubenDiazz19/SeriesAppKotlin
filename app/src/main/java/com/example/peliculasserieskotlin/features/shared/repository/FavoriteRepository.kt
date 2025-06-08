@@ -32,18 +32,17 @@ class FavoriteRepository @Inject constructor(
         favoriteDao.isFavorite(id, type.name)
 
     /*----------------- ⭐ Lista de favoritos -----------------*/
+    /**
+     * Devuelve un Flow con la lista de favoritos del tipo solicitado, manteniendo el orden y eficiencia.
+     */
     fun getFavoriteMedia(mediaType: MediaType): Flow<List<MediaItem>> =
-        favoriteDao.getFavoritesByType(mediaType.name)                 // emite cambios
+        favoriteDao.getFavoritesByType(mediaType.name)
             .map { favs ->
                 val ids = favs.map { it.mediaId }
                 if (ids.isEmpty()) return@map emptyList()
-
-                /* Traemos TODOS los ids sin filtrar por tipo -------- */
                 mediaItemDao.getMediaItemsByIds(ids)
                     .map { it.toDomain() }
-                    /* Filtramos por el tipo solicitado -------------- */
                     .filter { it.type == mediaType }
-                    /* Mantenemos el mismo orden que la lista de ids --*/
                     .sortedBy { ids.indexOf(it.id) }
             }
 }

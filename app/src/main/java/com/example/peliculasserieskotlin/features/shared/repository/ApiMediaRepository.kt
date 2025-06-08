@@ -15,6 +15,7 @@ import com.example.peliculasserieskotlin.data.SeriesApiService
 import com.example.peliculasserieskotlin.data.model.toDetailedDomain
 import com.example.peliculasserieskotlin.data.model.toDomain
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
+import com.example.peliculasserieskotlin.core.util.Result
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -183,7 +184,7 @@ class ApiMediaRepository @Inject constructor(
     }
 
     // En ApiMediaRepository.kt
-    override suspend fun getMovieDetails(movieId: Int): MediaDetailItem? {
+    override suspend fun getMovieDetails(movieId: Int): Result<MediaDetailItem> {
         val apiKey = context.getString(R.string.apiKey)
         return try {
             val response = movieApiService.getMovieDetails(
@@ -191,14 +192,14 @@ class ApiMediaRepository @Inject constructor(
                 apiKey = apiKey,
                 appendToResponse = "videos,credits"
             )
-            response.toDetailedDomain()
+            Result.Success(response.toDetailedDomain())
         } catch (e: Exception) {
             Log.e("ApiMediaRepository", "Error en getMovieDetails: ${e.message}")
-            null
+            Result.Error(e)
         }
     }
 
-    override suspend fun getSeriesDetails(seriesId: Int): MediaDetailItem? {
+    override suspend fun getSeriesDetails(seriesId: Int): Result<MediaDetailItem> {
         val apiKey = context.getString(R.string.apiKey)
         return try {
             val response = seriesApiService.getSeriesDetails(
@@ -206,10 +207,10 @@ class ApiMediaRepository @Inject constructor(
                 apiKey = apiKey,
                 appendToResponse = "videos,credits"
             )
-            response.toDetailedDomain()
+            Result.Success(response.toDetailedDomain())
         } catch (e: Exception) {
             Log.e("ApiMediaRepository", "Error en getSeriesDetails: ${e.message}")
-            null
+            Result.Error(e)
         }
     }
 }

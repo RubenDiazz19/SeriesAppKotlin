@@ -65,142 +65,51 @@ fun HomeScreen(
     val targetMediaType = if (selectedCategory == "Películas") MediaType.MOVIE else MediaType.SERIES
 
     Box(Modifier.fillMaxSize()) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-        ) {
-            AnimatedVisibility(
-                visible = showHeader,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                HomeHeader(
-                    selectedCategory = selectedCategory,
-                    onCategorySelected = viewModel::updateCategory,
-                    searchText = searchText,
-                    onSearchQueryChanged = viewModel::onSearchQueryChanged,
-                    sortBy = sortBy,
-                    onSortTypeSelected = viewModel::setSortType,
-                    inlineSearchActive = inlineSearchActive
-                )
+        when {
+            uiState.error != null -> {
+                Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = uiState.error ?: "Error desconocido",
+                        color = Color.Red,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
             }
-
-            when {
-                uiState.isSearching -> {
-                    Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
+            uiState.isLoading -> {
+                Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-
-                uiState.error != null -> {
-                    Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+            }
+            else -> {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    AnimatedVisibility(
+                        visible = showHeader,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
                     ) {
-                        Text("Error: ${uiState.error}", color = Color.Red)
-                    }
-                }
-
-                sortBy == HomeViewModel.SortType.FAVORITE -> {
-                    val itemsToDisplay = favoriteItems.filter { it.type == targetMediaType }
-
-                    if (itemsToDisplay.isEmpty()) {
-                        Box(
-                            Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("No hay favoritos")
-                        }
-                    } else {
-                        LazyVerticalGrid(
-                            state = listState,
-                            columns = GridCells.Adaptive(150.dp),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(vertical = 4.dp)
-                        ) {
-                            items(
-                                items = itemsToDisplay,
-                                key = { it.id }
-                            ) { item ->
-                                val isFavorite by viewModel.isFavorite(item.id, item.type)
-                                    .collectAsState(initial = false)
-
-                                MediaItemView(
-                                    mediaItem = item,
-                                    isFavorite = isFavorite,
-                                    onFavoriteClick = { mediaItem, newFavoriteState ->
-                                        viewModel.toggleFavorite(mediaItem, newFavoriteState)
-                                    },
-                                    onItemClick = { viewModel.onMediaItemSelected(it) } // NUEVO
-                                )
-                            }
-                        }
-                    }
-                }
-
-                else -> {
-                    LazyVerticalGrid(
-                        state = listState,
-                        columns = GridCells.Adaptive(150.dp),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        items(pagedItems.itemCount) { index ->
-                            val item = pagedItems[index]
-                            if (item != null && item.type == targetMediaType) {
-                                val isFavorite by viewModel.isFavorite(item.id, item.type)
-                                    .collectAsState(initial = false)
-
-                                MediaItemView(
-                                    mediaItem = item,
-                                    isFavorite = isFavorite,
-                                    onFavoriteClick = { mediaItem, newFavoriteState ->
-                                        viewModel.toggleFavorite(mediaItem, newFavoriteState)
-                                    },
-                                    onItemClick = { viewModel.onMediaItemSelected(it) } // NUEVO
-                                )
-                            }
-                        }
-
-                        when (pagedItems.loadState.append) {
-                            is LoadState.Loading -> {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(modifier = Modifier.padding(16.dp))
-                                    }
-                                }
-                            }
-
-                            is LoadState.Error -> {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            "Error al cargar más elementos",
-                                            color = Color.Red,
-                                            modifier = Modifier.padding(16.dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            else -> {}
-                        }
+                        HomeHeader(
+                            selectedCategory = selectedCategory,
+                            onCategorySelected = viewModel::updateCategory,
+                            searchText = searchText,
+                            onSearchQueryChanged = viewModel::onSearchQueryChanged,
+                            sortBy = sortBy,
+                            onSortTypeSelected = viewModel::setSortType,
+                            inlineSearchActive = inlineSearchActive
+                        )
                     }
 
-                    when (pagedItems.loadState.refresh) {
-                        is LoadState.Loading -> {
+                    when {
+                        uiState.isSearching -> {
                             Box(
                                 Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
@@ -209,16 +118,122 @@ fun HomeScreen(
                             }
                         }
 
-                        is LoadState.Error -> {
-                            Box(
-                                Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Error al cargar datos", color = Color.Red)
+                        sortBy == HomeViewModel.SortType.FAVORITE -> {
+                            val itemsToDisplay = favoriteItems.filter { it.type == targetMediaType }
+
+                            if (itemsToDisplay.isEmpty()) {
+                                Box(
+                                    Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("No hay favoritos")
+                                }
+                            } else {
+                                LazyVerticalGrid(
+                                    state = listState,
+                                    columns = GridCells.Adaptive(150.dp),
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    items(
+                                        items = itemsToDisplay,
+                                        key = { it.id }
+                                    ) { item ->
+                                        val isFavorite by viewModel.isFavorite(item.id, item.type)
+                                            .collectAsState(initial = false)
+
+                                        MediaItemView(
+                                            mediaItem = item,
+                                            isFavorite = isFavorite,
+                                            onFavoriteClick = { mediaItem, newFavoriteState ->
+                                                viewModel.toggleFavorite(mediaItem, newFavoriteState)
+                                            },
+                                            onItemClick = { viewModel.onMediaItemSelected(it) } // NUEVO
+                                        )
+                                    }
+                                }
                             }
                         }
 
-                        else -> {}
+                        else -> {
+                            LazyVerticalGrid(
+                                state = listState,
+                                columns = GridCells.Adaptive(150.dp),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                items(pagedItems.itemCount) { index ->
+                                    val item = pagedItems[index]
+                                    if (item != null && item.type == targetMediaType) {
+                                        val isFavorite by viewModel.isFavorite(item.id, item.type)
+                                            .collectAsState(initial = false)
+
+                                        MediaItemView(
+                                            mediaItem = item,
+                                            isFavorite = isFavorite,
+                                            onFavoriteClick = { mediaItem, newFavoriteState ->
+                                                viewModel.toggleFavorite(mediaItem, newFavoriteState)
+                                            },
+                                            onItemClick = { viewModel.onMediaItemSelected(it) } // NUEVO
+                                        )
+                                    }
+                                }
+
+                                when (pagedItems.loadState.append) {
+                                    is LoadState.Loading -> {
+                                        item {
+                                            Box(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                                            }
+                                        }
+                                    }
+
+                                    is LoadState.Error -> {
+                                        item {
+                                            Box(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    "Error al cargar más elementos",
+                                                    color = Color.Red,
+                                                    modifier = Modifier.padding(16.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    else -> {}
+                                }
+                            }
+
+                            when (pagedItems.loadState.refresh) {
+                                is LoadState.Loading -> {
+                                    Box(
+                                        Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
+                                }
+
+                                is LoadState.Error -> {
+                                    Box(
+                                        Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text("Error al cargar datos", color = Color.Red)
+                                    }
+                                }
+
+                                else -> {}
+                            }
+                        }
                     }
                 }
             }

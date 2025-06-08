@@ -2,39 +2,68 @@ package com.example.peliculasserieskotlin.data.model
 
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
+import com.google.gson.annotations.SerializedName
 
 /**
  * Modelo que representa una serie desde la API.
  * Mapea la respuesta JSON de series.
  */
 data class SeriesApiModel(
+    @SerializedName("id")
     val id: Int?,                // ID único de la serie
+    
+    @SerializedName("name")
     val name: String?,           // Nombre de la serie
-    val first_air_date: String?, // Fecha de primera emisión
+    
+    @SerializedName("first_air_date")
+    val firstAirDate: String?,   // Fecha de primera emisión
+    
+    @SerializedName("overview")
     val overview: String?,       // Descripción de la serie
-    val poster_path: String?,    // Ruta al póster
-    val vote_average: Double?    // Puntuación (0-10)
-)
+    
+    @SerializedName("poster_path")
+    val posterPath: String?,     // Ruta al póster
+    
+    @SerializedName("backdrop_path")
+    val backdropPath: String?,   // Ruta a la imagen de fondo
+    
+    @SerializedName("vote_average")
+    val voteAverage: Double?     // Puntuación (0-10)
+) {
+    /**
+     * Valida que los campos críticos no sean nulos.
+     * @return true si los campos críticos son válidos
+     */
+    fun isValid(): Boolean {
+        return id != null && name != null
+    }
 
-/**
- * Convierte un SeriesApiModel a un MediaItem del dominio.
- * Unifica series y películas bajo un mismo modelo.
- */
-fun SeriesApiModel.toDomain(): MediaItem {
-    return MediaItem(
-        id = id ?: 0,
-        title = name ?: "Serie desconocida",
-        overview = overview ?: "Sin descripción",
-        posterUrl = poster_path?.let { "https://image.tmdb.org/t/p/w500$it" } ?: "",
-        voteAverage = vote_average ?: 0.0,
-        type = MediaType.SERIES,
-        backdropUrl = first_air_date?.split("-")?.getOrNull(0) ?: "Año desconocido"
-    )
+    /**
+     * Convierte un SeriesApiModel a un MediaItem del dominio.
+     * Unifica series y películas bajo un mismo modelo.
+     */
+    fun toDomain(): MediaItem {
+        require(isValid()) { "SeriesApiModel no es válido: id o name son nulos" }
+        
+        return MediaItem(
+            id = id ?: 0,
+            title = name ?: "Serie desconocida",
+            overview = overview ?: "Sin descripción",
+            posterUrl = MediaConstants.formatImageUrl(posterPath),
+            backdropUrl = MediaConstants.formatImageUrl(backdropPath, MediaConstants.DEFAULT_BACKDROP_SIZE),
+            voteAverage = voteAverage ?: 0.0,
+            type = MediaType.SERIES
+        )
+    }
 }
 
 /**
  * Respuesta paginada de la API de series.
  */
 data class SeriesApiResponse(
+    @SerializedName("results")
     val results: List<SeriesApiModel>  // Lista de series
 )
+
+// Función de extensión para compatibilidad
+fun SeriesApiModel.toDomain(): MediaItem = this.toDomain()

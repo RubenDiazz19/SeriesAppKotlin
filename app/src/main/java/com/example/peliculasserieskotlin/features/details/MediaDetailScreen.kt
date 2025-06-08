@@ -65,46 +65,63 @@ fun MediaDetailScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        if (uiState == null) {
-            // Loader centrado con estilo elegante
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+        when {
+            uiState?.error != null -> {
+                // Mostrar mensaje de error
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp),
-                        strokeWidth = 4.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
                     Text(
-                        text = "Cargando contenido...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        text = uiState!!.error ?: "Error desconocido",
+                        color = Color.Red,
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
-        } else {
-            MediaDetailContent(
-                uiState = uiState!!,
-                isFavorite = isFavorite,
-                onFavoriteClick = { newFavoriteState ->
-                    // Crear MediaItem a partir del uiState
-                    val mediaItem = MediaItem(
-                        id = mediaId,
-                        title = uiState!!.title,
-                        posterUrl = uiState!!.posterUrl.toString(),
-                        type = type,
-                        overview = uiState!!.overview,
-                        voteAverage = extractVoteAverage(uiState!!.voteAverageFormatted),
-                        backdropUrl = uiState!!.posterUrl.toString()
-                    )
-                    favoriteViewModel.toggleFavorite(mediaItem, newFavoriteState)
+            uiState == null -> {
+                // Loader centrado con estilo elegante
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            strokeWidth = 4.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Cargando contenido...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
                 }
-            )
+            }
+            else -> {
+                MediaDetailContent(
+                    uiState = uiState!!,
+                    isFavorite = isFavorite,
+                    onFavoriteClick = { newFavoriteState ->
+                        // Crear MediaItem a partir del uiState
+                        val mediaItem = MediaItem(
+                            id = mediaId,
+                            title = uiState!!.title,
+                            posterUrl = uiState!!.posterUrl.toString(),
+                            type = type,
+                            overview = uiState!!.overview,
+                            voteAverage = extractVoteAverage(uiState!!.voteAverageFormatted),
+                            backdropUrl = uiState!!.posterUrl.toString()
+                        )
+                        favoriteViewModel.toggleFavorite(mediaItem, newFavoriteState)
+                    }
+                )
+            }
         }
 
         // Botón de retroceso flotante
@@ -238,7 +255,7 @@ fun MediaDetailContent(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
                             tint = Color(0xFFFFD700),
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                         Text(
                             text = uiState.voteAverageFormatted ?: "N/A",

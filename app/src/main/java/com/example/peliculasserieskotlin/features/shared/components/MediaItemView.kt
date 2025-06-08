@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.peliculasserieskotlin.core.model.MediaItem
+import com.example.peliculasserieskotlin.features.shared.components.rememberFavoriteState
 
 @SuppressLint("DefaultLocale")
 @Composable
@@ -31,12 +32,11 @@ fun MediaItemView(
     onFavoriteClick: ((mediaItem: MediaItem, isFavorite: Boolean) -> Unit)? = null,
     onItemClick: ((mediaItem: MediaItem) -> Unit)? = null // NUEVO parámetro
 ) {
-    var localFavorite by remember { mutableStateOf(isFavorite) }
-
-    // Sincroniza localFavorite con la propiedad isFavorite cuando esta cambie externamente
-    LaunchedEffect(isFavorite) {
-        localFavorite = isFavorite
-    }
+    val (localFavorite, toggleFavorite) = rememberFavoriteState(
+        mediaItem = mediaItem,
+        isFavorite = isFavorite,
+        onFavoriteToggle = { item, fav -> onFavoriteClick?.invoke(item, fav) }
+    )
 
     Column(
         modifier = Modifier
@@ -83,11 +83,7 @@ fun MediaItemView(
                         style = MaterialTheme.typography.bodySmall
                     )
                     IconButton(
-                        onClick = {
-                            val newFavoriteState = !localFavorite
-                            localFavorite = newFavoriteState
-                            onFavoriteClick?.invoke(mediaItem, newFavoriteState)
-                        },
+                        onClick = toggleFavorite,
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(

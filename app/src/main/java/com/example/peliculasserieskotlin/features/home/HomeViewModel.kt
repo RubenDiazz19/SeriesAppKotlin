@@ -142,6 +142,9 @@ class HomeViewModel @Inject constructor(
     private fun updateLoading(value: Boolean) =
         _uiState.update { it.copy(isLoading = value) }
 
+    private fun updateError(errorMsg: String?) =
+        _uiState.update { it.copy(error = errorMsg, isLoading = false, isSearching = false) }
+
     /*----------- NAVEGACIÓN DETALLE -----------*/
     private val _navigateToDetail = MutableSharedFlow<Pair<Int, MediaType>>()
     val navigateToDetail = _navigateToDetail.asSharedFlow()
@@ -152,5 +155,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun loadMediaItems() {
+        viewModelScope.launch {
+            try {
+                updateLoading(true)
+                // Simulación de carga, reemplaza por tu lógica real
+                // val result = mediaRepository.getPagedMedia(...)
+                // if (result is Result.Error) updateError(result.exception.localizedMessage)
+                // else ...
+                updateLoading(false)
+            } catch (e: Exception) {
+                updateError(e.localizedMessage ?: "Error desconocido")
+            }
+        }
+    }
 
 }

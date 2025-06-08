@@ -6,80 +6,135 @@ import com.example.peliculasserieskotlin.core.model.ProductionCompanyItem
 import com.example.peliculasserieskotlin.core.model.ProductionCountryItem
 import com.example.peliculasserieskotlin.core.model.SpokenLanguageItem
 import com.example.peliculasserieskotlin.core.model.MediaDetailItem
+import com.google.gson.annotations.SerializedName
+import java.time.LocalDate
 
 /**
  * Modelo que representa los detalles completos de una serie desde la API TMDB.
  */
 data class SeriesDetailResponse(
+    @SerializedName("id")
     val id: Int?,                   // ID único de la serie
+    
+    @SerializedName("name")
     val name: String?,              // Nombre de la serie
-    val original_name: String?,     // Nombre original
-    val first_air_date: String?,    // Fecha de primera emisión
+    
+    @SerializedName("original_name")
+    val originalName: String?,      // Nombre original
+    
+    @SerializedName("first_air_date")
+    val firstAirDate: String?,      // Fecha de primera emisión
+    
+    @SerializedName("overview")
     val overview: String?,          // Descripción de la serie
-    val poster_path: String?,       // Ruta al póster
-    val backdrop_path: String?,     // Ruta a la imagen de fondo
-    val vote_average: Double?,      // Puntuación (0-10)
-    val vote_count: Int?,           // Número de votos
+    
+    @SerializedName("poster_path")
+    val posterPath: String?,        // Ruta al póster
+    
+    @SerializedName("backdrop_path")
+    val backdropPath: String?,      // Ruta a la imagen de fondo
+    
+    @SerializedName("vote_average")
+    val voteAverage: Double?,       // Puntuación (0-10)
+    
+    @SerializedName("vote_count")
+    val voteCount: Int?,            // Número de votos
+    
+    @SerializedName("popularity")
     val popularity: Double?,        // Popularidad
-    val episode_run_time: List<Int>?, // Duración de episodios en minutos
-    val number_of_episodes: Int?,   // Número de episodios
-    val number_of_seasons: Int?,    // Número de temporadas
+    
+    @SerializedName("episode_run_time")
+    val episodeRunTime: List<Int>?, // Duración de episodios en minutos
+    
+    @SerializedName("number_of_episodes")
+    val numberOfEpisodes: Int?,     // Número de episodios
+    
+    @SerializedName("number_of_seasons")
+    val numberOfSeasons: Int?,      // Número de temporadas
+    
+    @SerializedName("tagline")
     val tagline: String?,           // Eslogan
+    
+    @SerializedName("status")
     val status: String?,            // Estado (En emisión, Finalizada, etc.)
-    val genres: List<Genre>?, // Géneros
-    val production_companies: List<ProductionCompany>?, // Compañías productoras
-    val production_countries: List<ProductionCountry>?, // Países de producción
-    val spoken_languages: List<SpokenLanguage>?, // Idiomas hablados
+    
+    @SerializedName("genres")
+    val genres: List<Genre>?,       // Géneros
+    
+    @SerializedName("production_companies")
+    val productionCompanies: List<ProductionCompany>?, // Compañías productoras
+    
+    @SerializedName("production_countries")
+    val productionCountries: List<ProductionCountry>?, // Países de producción
+    
+    @SerializedName("spoken_languages")
+    val spokenLanguages: List<SpokenLanguage>?, // Idiomas hablados
+    
+    @SerializedName("networks")
     val networks: List<NetworkResponse>? // Redes de televisión
-)
+) {
+    /**
+     * Valida que los campos críticos no sean nulos.
+     * @return true si los campos críticos son válidos
+     */
+    fun isValid(): Boolean {
+        return id != null && name != null
+    }
+
+    /**
+     * Convierte un SeriesDetailResponse a un MediaDetailItem del dominio con todos los detalles.
+     * Maneja valores nulos con valores predeterminados.
+     */
+    fun toDetailedDomain(): MediaDetailItem.SeriesDetailItem {
+        require(isValid()) { "SeriesDetailResponse no es válido: id o name son nulos" }
+        
+        return MediaDetailItem.SeriesDetailItem(
+            id = id ?: 0,
+            title = name ?: "Serie desconocida",
+            overview = overview ?: "Sin descripción",
+            posterUrl = MediaConstants.formatImageUrl(posterPath),
+            backdropUrl = MediaConstants.formatImageUrl(backdropPath, MediaConstants.DEFAULT_BACKDROP_SIZE),
+            voteAverage = voteAverage ?: 0.0,
+            originalTitle = originalName,
+            firstAirDate = firstAirDate,
+            voteCount = voteCount,
+            runtime = episodeRunTime?.firstOrNull(),
+            numberOfSeasons = numberOfSeasons,
+            numberOfEpisodes = numberOfEpisodes,
+            genres = genres?.mapNotNull { it.id?.let { genreId -> GenreItem(genreId, it.name ?: "") } },
+            productionCompanies = productionCompanies?.mapNotNull {
+                ProductionCompanyItem(
+                    name = it.name ?: "",
+                    logoPath = MediaConstants.formatImageUrl(it.logoPath),
+                    originCountry = it.originCountry ?: ""
+                )
+            },
+            productionCountries = productionCountries?.mapNotNull {
+                it.iso3166_1?.let { iso -> ProductionCountryItem(iso, it.name ?: "") }
+            },
+            spokenLanguages = spokenLanguages?.mapNotNull {
+                it.iso639_1?.let { iso -> SpokenLanguageItem(it.englishName ?: "", iso, it.name ?: "") }
+            },
+            status = status,
+            tagline = tagline,
+            type = MediaType.SERIES
+        )
+    }
+}
 
 /**
  * Modelo para representar una red de televisión
  */
 data class NetworkResponse(
+    @SerializedName("id")
     val id: Int?,
+    
+    @SerializedName("name")
     val name: String?,
-    val logo_path: String?
+    
+    @SerializedName("logo_path")
+    val logoPath: String?
 )
 
-/**
- * Extensión para convertir SeriesDetailResponse a MediaDetailItem
- */
-fun SeriesDetailResponse.toDetailedDomain(): MediaDetailItem {
-    return MediaDetailItem(
-        // Campos básicos de MediaItem
-        id = id ?: 0,
-        title = name ?: "Serie desconocida",
-        overview = overview ?: "Sin descripción",
-        posterUrl = poster_path?.let { "https://image.tmdb.org/t/p/w500$it" } ?: "",
-        backdropUrl = backdrop_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-        voteAverage = vote_average ?: 0.0,
-        type = MediaType.SERIES,
-
-        // Campos adicionales
-        originalTitle = original_name,
-        releaseDate = first_air_date,
-        voteCount = vote_count,
-        runtime = episode_run_time?.firstOrNull(),
-        budget = null, // Las series no tienen presupuesto como las películas
-        revenue = null, // Las series no tienen ingresos como las películas
-        tagline = tagline,
-        status = status,
-        genres = genres?.mapNotNull {
-            it.id?.let { genreId -> GenreItem(genreId, it.name ?: "") }
-        } ?: emptyList(),
-        productionCompanies = production_companies?.mapNotNull {
-            ProductionCompanyItem(
-                name = it.name ?: "",
-                logoPath = it.logo_path,
-                originCountry = it.origin_country ?: ""
-            )
-        } ?: emptyList(),
-        productionCountries = production_countries?.mapNotNull {
-            it.iso_3166_1?.let { iso -> ProductionCountryItem(iso, it.name ?: "") }
-        } ?: emptyList(),
-        spokenLanguages = spoken_languages?.mapNotNull {
-            it.iso_639_1?.let { iso -> SpokenLanguageItem(it.english_name ?: "", iso, it.name ?: "") }
-        } ?: emptyList()
-    )
-}
+// Función de extensión para compatibilidad
+fun SeriesDetailResponse.toDetailedDomain(): MediaDetailItem.SeriesDetailItem = this.toDetailedDomain()

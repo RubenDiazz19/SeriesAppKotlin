@@ -76,8 +76,8 @@ object AppModule {
     ): ApiMediaRepository = ApiMediaRepository(movieApi, seriesApi, ctx)
 
     @Provides @Singleton
-    fun provideRoomMediaRepository(mediaItemDao: MediaItemDao): RoomMediaRepository =
-        RoomMediaRepository(mediaItemDao)
+    fun provideRoomMediaRepository(mediaItemDao: MediaItemDao, favoriteDao: FavoriteDao): RoomMediaRepository =
+        RoomMediaRepository(mediaItemDao, favoriteDao)
 
     @Provides @Singleton
     fun provideMediaRepository(
