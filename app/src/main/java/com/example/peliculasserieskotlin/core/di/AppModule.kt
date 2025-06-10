@@ -61,7 +61,9 @@ object AppModule {
 
     @Provides @Singleton
     fun provideDatabase(@ApplicationContext ctx: Context): AppDatabase =
-        Room.databaseBuilder(ctx, AppDatabase::class.java, "media_database").build()
+        Room.databaseBuilder(ctx, AppDatabase::class.java, "media_database")
+            .fallbackToDestructiveMigration()
+            .build()
 
     @Provides fun provideMediaItemDao(db: AppDatabase): MediaItemDao = db.mediaItemDao()
     @Provides fun provideFavoriteDao(db: AppDatabase): FavoriteDao = db.favoriteDao()

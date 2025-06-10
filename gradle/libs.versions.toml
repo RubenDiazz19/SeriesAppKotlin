@@ -1,6 +1,6 @@
 [versions]
 # Versiones principales del proyecto
-agp = "8.10.0"
+agp = "8.10.1"
 hiltNavigationCompose = "1.2.0"
 kotlin = "2.0.21"
 
