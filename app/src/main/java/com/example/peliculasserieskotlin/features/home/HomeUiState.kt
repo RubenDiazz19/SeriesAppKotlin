@@ -6,5 +6,7 @@ data class HomeUiState(
     val mediaItems: List<MediaItem> = emptyList(),
     val isLoading: Boolean = false,
     val isSearching: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isOffline: Boolean = false,
+    val showOfflineWarning: Boolean = false
 )

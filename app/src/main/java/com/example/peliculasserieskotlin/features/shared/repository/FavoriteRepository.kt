@@ -1,10 +1,10 @@
 package com.example.peliculasserieskotlin.features.shared.repository
 
-import com.example.peliculasserieskotlin.core.database.FavoriteDao
-import com.example.peliculasserieskotlin.core.database.FavoriteEntity
-import com.example.peliculasserieskotlin.core.database.MediaItemDao
-import com.example.peliculasserieskotlin.core.database.toDomain
-import com.example.peliculasserieskotlin.core.database.toEntity
+import com.example.peliculasserieskotlin.core.database.dao.FavoriteDao
+import com.example.peliculasserieskotlin.core.database.entity.FavoriteEntity
+import com.example.peliculasserieskotlin.core.database.dao.MediaItemDao
+import com.example.peliculasserieskotlin.core.database.entity.toDomain
+import com.example.peliculasserieskotlin.core.database.entity.toEntity
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
 import kotlinx.coroutines.flow.Flow

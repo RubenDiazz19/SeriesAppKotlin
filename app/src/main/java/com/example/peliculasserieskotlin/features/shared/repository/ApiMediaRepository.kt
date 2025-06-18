@@ -15,7 +15,7 @@ import com.example.peliculasserieskotlin.data.SeriesApiService
 import com.example.peliculasserieskotlin.data.model.toDetailedDomain
 import com.example.peliculasserieskotlin.data.model.toDomain
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
-import com.example.peliculasserieskotlin.core.util.Result
+import com.example.peliculasserieskotlin.core.util.AppResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -24,7 +24,8 @@ import javax.inject.Inject
 class ApiMediaRepository @Inject constructor(
     private val movieApiService: MovieApiService,
     private val seriesApiService: SeriesApiService,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val roomRepository: RoomMediaRepository
 ) : MediaRepository {
 
     /**
@@ -36,24 +37,10 @@ class ApiMediaRepository @Inject constructor(
      */
     override fun getPopularMedia(page: Int, genre: String?, type: MediaType): Flow<List<MediaItem>> =
         flow {
-            val apiKey = context.getString(R.string.apiKey) // Obtener apiKey
+            val apiKey = context.getString(R.string.apiKey)
             val mediaList = when (type) {
-                MediaType.MOVIE -> {
-                    // Nota: El parámetro 'genre' no se usa directamente aquí.
-                    // El endpoint /popular de TMDB no filtra por género.
-                    movieApiService.getPopularMovies(
-                        apiKey = apiKey,
-                        page = page
-                    ).results.map { it.toDomain() }
-                }
-
-                MediaType.SERIES -> {
-                    // Nota: El parámetro 'genre' no se usa directamente aquí.
-                    seriesApiService.getPopularSeries(
-                        apiKey = apiKey,
-                        page = page
-                    ).results.map { it.toDomain() }
-                }
+                MediaType.MOVIE -> movieApiService.getPopularMovies(apiKey = apiKey, page = page).results.map { it.toDomain() }
+                MediaType.SERIES -> seriesApiService.getPopularSeries(apiKey = apiKey, page = page).results.map { it.toDomain() }
             }
             emit(mediaList)
         }
@@ -65,17 +52,10 @@ class ApiMediaRepository @Inject constructor(
      * @return Flow con lista de elementos multimedia.
      */
     override fun getTopRatedMedia(page: Int, type: MediaType): Flow<List<MediaItem>> = flow {
-        val apiKey = context.getString(R.string.apiKey) // Obtener apiKey
+        val apiKey = context.getString(R.string.apiKey)
         val mediaList = when (type) {
-            MediaType.MOVIE -> movieApiService.getTopRatedMovies(
-                apiKey = apiKey,
-                page = page
-            ).results.map { it.toDomain() }
-
-            MediaType.SERIES -> seriesApiService.getTopRatedSeries(
-                apiKey = apiKey,
-                page = page
-            ).results.map { it.toDomain() }
+            MediaType.MOVIE -> movieApiService.getTopRatedMovies(apiKey = apiKey, page = page).results.map { it.toDomain() }
+            MediaType.SERIES -> seriesApiService.getTopRatedSeries(apiKey = apiKey, page = page).results.map { it.toDomain() }
         }
         emit(mediaList)
     }
@@ -87,18 +67,10 @@ class ApiMediaRepository @Inject constructor(
      * @return Flow con lista de elementos multimedia.
      */
     override fun getDiscoverMedia(page: Int, type: MediaType): Flow<List<MediaItem>> = flow {
-        val apiKey = context.getString(R.string.apiKey) // Obtener apiKey
-        // Para "Discover", usar los endpoints getAllMovies y getAllSeries
+        val apiKey = context.getString(R.string.apiKey)
         val mediaList = when (type) {
-            MediaType.MOVIE -> movieApiService.getAllMovies(
-                apiKey = apiKey,
-                page = page
-            ).results.map { it.toDomain() }
-
-            MediaType.SERIES -> seriesApiService.getAllSeries(
-                apiKey = apiKey,
-                page = page
-            ).results.map { it.toDomain() }
+            MediaType.MOVIE -> movieApiService.getAllMovies(apiKey = apiKey, page = page).results.map { it.toDomain() }
+            MediaType.SERIES -> seriesApiService.getAllSeries(apiKey = apiKey, page = page).results.map { it.toDomain() }
         }
         emit(mediaList)
     }
@@ -112,7 +84,6 @@ class ApiMediaRepository @Inject constructor(
      */
     override suspend fun searchMedia(query: String, page: Int, type: MediaType): List<MediaItem> {
         if (query.isBlank()) return emptyList()
-
         val apiKey = context.getString(R.string.apiKey)
         return try {
             when (type) {
@@ -120,7 +91,6 @@ class ApiMediaRepository @Inject constructor(
                 MediaType.SERIES -> seriesApiService.searchSeries(query = query, apiKey = apiKey, page = page).results.map { it.toDomain() }
             }
         } catch (e: Exception) {
-            // Registrar el error pero devolver lista vacía para evitar fallos
             Log.e("ApiMediaRepository", "Error en searchMedia: ${e.message}")
             emptyList()
         }
@@ -150,8 +120,7 @@ class ApiMediaRepository @Inject constructor(
      * @throws UnsupportedOperationException Siempre, ya que no es compatible.
      */
     override fun getAllMediaFromLocalDb(): Flow<List<MediaItem>> {
-        // ApiMediaRepository no se encarga de la base de datos local.
-        throw UnsupportedOperationException("ApiMediaRepository no puede leer todos los items de la base de datos local.")
+        return roomRepository.getAllCachedMedia()
     }
 
     /**
@@ -162,8 +131,6 @@ class ApiMediaRepository @Inject constructor(
         sortType: HomeViewModel.SortType,
         searchQuery: String?
     ): Flow<PagingData<MediaItem>> {
-        val apiKey = context.getString(R.string.apiKey)
-
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
@@ -174,43 +141,40 @@ class ApiMediaRepository @Inject constructor(
                 MediaPagingSource(
                     movieApiService = movieApiService,
                     seriesApiService = seriesApiService,
-                    apiKey = apiKey,
+                    context = context,
                     mediaType = mediaType,
                     sortType = sortType,
-                    searchQuery = searchQuery
+                    searchQuery = searchQuery,
+                    roomRepository = roomRepository
                 )
             }
         ).flow
     }
 
     // En ApiMediaRepository.kt
-    override suspend fun getMovieDetails(movieId: Int): Result<MediaDetailItem> {
-        val apiKey = context.getString(R.string.apiKey)
+    override suspend fun getMovieDetails(movieId: Int): AppResult<MediaDetailItem> {
         return try {
             val response = movieApiService.getMovieDetails(
                 movieId = movieId,
-                apiKey = apiKey,
-                appendToResponse = "videos,credits"
+                apiKey = context.getString(R.string.apiKey)
             )
-            Result.Success(response.toDetailedDomain())
+            AppResult.Success(response.toDetailedDomain())
         } catch (e: Exception) {
-            Log.e("ApiMediaRepository", "Error en getMovieDetails: ${e.message}")
-            Result.Error(e)
+            AppResult.Error(e)
         }
     }
 
-    override suspend fun getSeriesDetails(seriesId: Int): Result<MediaDetailItem> {
-        val apiKey = context.getString(R.string.apiKey)
+    override suspend fun getSeriesDetails(seriesId: Int): AppResult<MediaDetailItem> {
         return try {
             val response = seriesApiService.getSeriesDetails(
                 seriesId = seriesId,
-                apiKey = apiKey,
-                appendToResponse = "videos,credits"
+                apiKey = context.getString(R.string.apiKey)
             )
-            Result.Success(response.toDetailedDomain())
+            AppResult.Success(response.toDetailedDomain())
         } catch (e: Exception) {
-            Log.e("ApiMediaRepository", "Error en getSeriesDetails: ${e.message}")
-            Result.Error(e)
+            AppResult.Error(e)
         }
     }
+
+    override suspend fun hasDetailsCached(id: Int, type: MediaType): Boolean = false
 }

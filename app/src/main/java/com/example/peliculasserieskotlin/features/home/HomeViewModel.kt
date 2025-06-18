@@ -11,26 +11,24 @@ import com.example.peliculasserieskotlin.features.shared.repository.FavoriteRepo
 import com.example.peliculasserieskotlin.features.shared.repository.MediaRepository
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
+import com.example.peliculasserieskotlin.core.util.NetworkUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.peliculasserieskotlin.features.home.HomeUiState
+import android.util.Log
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val mediaRepository: MediaRepository,
-    private val favoriteRepository: FavoriteRepository
+    private val favoriteRepository: FavoriteRepository,
+    private val networkUtils: NetworkUtils
 ) : ViewModel() {
 
     /*---------------------------  UI STATE  ---------------------------*/
-
-    data class HomeUiState(
-        val isLoading: Boolean = false,
-        val isSearching: Boolean = false,
-        val error: String? = null
-    )
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -63,8 +61,13 @@ class HomeViewModel @Inject constructor(
         if (sort == SortType.FAVORITE) {
             flowOf(PagingData.empty())
         } else {
-            mediaRepository.getPagedMedia(mediaType, sort, query)
-                .cachedIn(viewModelScope)
+            try {
+                mediaRepository.getPagedMedia(mediaType, sort, query)
+                    .cachedIn(viewModelScope)
+            } catch (e: Exception) {
+                updateError(e.localizedMessage ?: "Error al cargar los datos")
+                flowOf(PagingData.empty())
+            }
         }
     }.stateIn(
         scope = viewModelScope,
@@ -78,7 +81,12 @@ class HomeViewModel @Inject constructor(
     ) { category, sort ->
         if (sort == SortType.FAVORITE) {
             val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
-            favoriteRepository.getFavoriteMedia(mediaType)
+            try {
+                favoriteRepository.getFavoriteMedia(mediaType)
+            } catch (e: Exception) {
+                updateError(e.localizedMessage ?: "Error al cargar favoritos")
+                flowOf(emptyList())
+            }
         } else {
             flowOf(emptyList())
         }
@@ -89,11 +97,59 @@ class HomeViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    val cachedMediaItems: StateFlow<List<MediaItem>> = _selectedCategory
+        .map { category ->
+            val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
+            mediaRepository.getMediaFromLocalDb(mediaType)
+        }
+        .flatMapLatest { it }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     private var searchJob: Job? = null
 
+    init {
+        // Observar cambios en la conectividad
+        viewModelScope.launch {
+            var wasOffline = false
+            networkUtils.getNetworkStatusFlow().collect { isConnected ->
+                Log.d("HomeViewModel", "Network status changed: isConnected=$isConnected")
+                _uiState.update { it.copy(isOffline = !isConnected) }
+                if (isConnected && wasOffline) {
+                    reloadAllData()
+                }
+                wasOffline = !isConnected
+            }
+        }
+        // Timer de respaldo para asegurar actualización del estado de red
+        viewModelScope.launch {
+            while (true) {
+                delay(5000)
+                val isConnected = networkUtils.isNetworkAvailable()
+                if (uiState.value.isOffline == isConnected) {
+                    Log.d("HomeViewModel", "Timer backup: Corrigiendo estado de red. isConnected=$isConnected")
+                    _uiState.update { it.copy(isOffline = !isConnected) }
+                }
+            }
+        }
+    }
+
+    private fun reloadAllData() {
+        // Llama a los métodos necesarios para recargar datos desde la API
+        loadMediaItems()
+        // Si tienes otros datos que refrescar, agrégalos aquí
+    }
+
     fun toggleFavorite(item: MediaItem, isFav: Boolean) = viewModelScope.launch {
-        if (isFav) favoriteRepository.addFavorite(item)
-        else favoriteRepository.removeFavorite(item.id, item.type)
+        try {
+            if (isFav) favoriteRepository.addFavorite(item)
+            else favoriteRepository.removeFavorite(item.id, item.type)
+        } catch (e: Exception) {
+            updateError(e.localizedMessage ?: "Error al actualizar favoritos")
+        }
     }
 
     fun isFavorite(id: Int, type: MediaType): Flow<Boolean> =
@@ -149,9 +205,23 @@ class HomeViewModel @Inject constructor(
     private val _navigateToDetail = MutableSharedFlow<Pair<Int, MediaType>>()
     val navigateToDetail = _navigateToDetail.asSharedFlow()
 
+    private val _showOfflineDetailWarning = MutableSharedFlow<Unit>()
+    val showOfflineDetailWarning = _showOfflineDetailWarning.asSharedFlow()
+
     fun onMediaItemSelected(mediaItem: MediaItem) {
         viewModelScope.launch {
-            _navigateToDetail.emit(mediaItem.id to mediaItem.type)
+            if (!networkUtils.isNetworkAvailable()) {
+                // Verificar si los detalles están en caché
+                val hasDetails = mediaRepository.hasDetailsCached(mediaItem.id, mediaItem.type)
+                if (hasDetails) {
+                    _navigateToDetail.emit(mediaItem.id to mediaItem.type)
+                } else {
+                    // Mostrar advertencia de que los detalles no están disponibles offline
+                    _showOfflineDetailWarning.emit(Unit)
+                }
+            } else {
+                _navigateToDetail.emit(mediaItem.id to mediaItem.type)
+            }
         }
     }
 
@@ -159,10 +229,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 updateLoading(true)
-                // Simulación de carga, reemplaza por tu lógica real
-                // val result = mediaRepository.getPagedMedia(...)
-                // if (result is Result.Error) updateError(result.exception.localizedMessage)
-                // else ...
+                // La carga se maneja automáticamente a través de los Flows
                 updateLoading(false)
             } catch (e: Exception) {
                 updateError(e.localizedMessage ?: "Error desconocido")
@@ -170,4 +237,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun clearError() {
+        updateError(null)
+    }
 }

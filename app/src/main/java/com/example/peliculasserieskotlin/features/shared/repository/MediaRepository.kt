@@ -3,10 +3,10 @@ package com.example.peliculasserieskotlin.features.shared.repository
 import androidx.paging.PagingData
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
-import com.example.peliculasserieskotlin.core.model.MediaDetailItem  // Cambiar esta importación
+import com.example.peliculasserieskotlin.core.model.MediaDetailItem
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
 import kotlinx.coroutines.flow.Flow
-import com.example.peliculasserieskotlin.core.util.Result
+import com.example.peliculasserieskotlin.core.util.AppResult
 
 /**
  * Interfaz que define las operaciones básicas para acceder a datos de películas y series.
@@ -75,6 +75,14 @@ interface MediaRepository {
     fun getAllMediaFromLocalDb(): Flow<List<MediaItem>>
 
     /**
+     * Verifica si los detalles de un elemento están almacenados en caché.
+     * @param id ID del elemento multimedia
+     * @param type Tipo de media (MOVIE o SERIES)
+     * @return true si los detalles están en caché, false en caso contrario
+     */
+    suspend fun hasDetailsCached(id: Int, type: MediaType): Boolean
+
+    /**
      * Va cargando las peliculas/series mediante paging 3
      */
     fun getPagedMedia(
@@ -88,12 +96,12 @@ interface MediaRepository {
      * @param movieId ID de la película
      * @return Un Result con MediaDetailItem o Error
      */
-    suspend fun getMovieDetails(movieId: Int): Result<MediaDetailItem>
+    suspend fun getMovieDetails(movieId: Int): AppResult<MediaDetailItem>
     
     /**
      * Obtiene los detalles completos de una serie específica.
      * @param seriesId ID de la serie
      * @return Un Result con MediaDetailItem o Error
      */
-    suspend fun getSeriesDetails(seriesId: Int): Result<MediaDetailItem>
+    suspend fun getSeriesDetails(seriesId: Int): AppResult<MediaDetailItem>
 }

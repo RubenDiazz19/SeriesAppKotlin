@@ -1,26 +1,31 @@
 package com.example.peliculasserieskotlin.core.paging
 
+import android.content.Context
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.example.peliculasserieskotlin.R
 import com.example.peliculasserieskotlin.data.MovieApiService
 import com.example.peliculasserieskotlin.data.SeriesApiService
 import com.example.peliculasserieskotlin.data.model.toDomain
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
+import com.example.peliculasserieskotlin.features.shared.repository.RoomMediaRepository
 
 class MediaPagingSource(
     private val movieApiService: MovieApiService,
     private val seriesApiService: SeriesApiService,
-    private val apiKey: String,
+    private val context: Context,
     private val mediaType: MediaType,
     private val sortType: HomeViewModel.SortType,
-    private val searchQuery: String? = null
+    private val searchQuery: String? = null,
+    private val roomRepository: RoomMediaRepository
 ) : PagingSource<Int, MediaItem>() {
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MediaItem> {
         return try {
             val page = params.key ?: 1
+            val apiKey = context.getString(R.string.apiKey)
             
             val response = when {
                 !searchQuery.isNullOrBlank() -> {
@@ -71,6 +76,11 @@ class MediaPagingSource(
                         }
                     }
                 }
+            }
+
+            // Guardar los elementos en caché
+            if (response.isNotEmpty()) {
+                roomRepository.cacheMediaItems(response)
             }
 
             LoadResult.Page(

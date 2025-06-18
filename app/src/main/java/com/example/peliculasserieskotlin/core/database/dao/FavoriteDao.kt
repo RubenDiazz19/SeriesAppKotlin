@@ -1,11 +1,11 @@
-package com.example.peliculasserieskotlin.core.database
+package com.example.peliculasserieskotlin.core.database.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.example.peliculasserieskotlin.core.database.FavoriteEntity
+import com.example.peliculasserieskotlin.core.database.entity.FavoriteEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao

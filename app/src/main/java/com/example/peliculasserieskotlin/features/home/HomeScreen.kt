@@ -28,6 +28,9 @@ import com.example.peliculasserieskotlin.features.shared.components.HomeHeader
 import com.example.peliculasserieskotlin.features.shared.components.InlineSearchTextField
 import com.example.peliculasserieskotlin.features.shared.components.SearchFab
 import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import com.example.peliculasserieskotlin.core.util.NetworkUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,13 +46,45 @@ fun HomeScreen(
     val searchText = viewModel.searchText
 
     val listState = rememberLazyGridState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val pagedItems = viewModel.pagedMediaItems.collectAsState().value.collectAsLazyPagingItems()
     val favoriteItems by viewModel.favoriteMediaItems.collectAsState()
+    val cachedItems by viewModel.cachedMediaItems.collectAsState()
+
+    // Simulación de conectividad (reemplaza esto por una comprobación real si tienes NetworkUtils disponible por DI)
+    val isOnline = pagedItems.loadState.refresh !is LoadState.Error
+
+    // Feedback visual al recuperar la conexión
+    var wasOffline by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.isOffline) {
+        if (!uiState.isOffline && wasOffline) {
+            snackbarHostState.showSnackbar("Conexión restaurada, actualizando contenido...")
+
+            // Siempre refresca la lista al reconectar
+            pagedItems.refresh()
+
+            // Si el usuario está al final de la lista y hubo error al cargar más elementos, forzar recarga de la siguiente página
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            if (lastVisible >= pagedItems.itemCount - 1 && pagedItems.loadState.append is LoadState.Error) {
+                pagedItems.retry()
+            }
+        }
+        wasOffline = uiState.isOffline
+    }
 
     LaunchedEffect(Unit) {
         viewModel.navigateToDetail.collectLatest { (id, type) ->
             onNavigateToDetail(id, type)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.showOfflineDetailWarning.collectLatest {
+            snackbarHostState.showSnackbar(
+                message = "Los detalles de este contenido no están disponibles sin conexión",
+                duration = SnackbarDuration.Short
+            )
         }
     }
 
@@ -70,117 +105,173 @@ fun HomeScreen(
 
     val targetMediaType = if (selectedCategory == "Películas") MediaType.MOVIE else MediaType.SERIES
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.surface,
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
                     )
                 )
-            )
-    ) {
-        when {
-            uiState.error != null -> {
-                ErrorState(error = uiState.error ?: "Error desconocido")
-            }
-            uiState.isLoading -> {
-                LoadingState()
-            }
-            else -> {
-                Column(
-                    Modifier.fillMaxSize()
-                ) {
-                    // Header con animación suave
-                    AnimatedVisibility(
-                        visible = showHeader,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
+        ) {
+            when {
+                uiState.error != null -> {
+                    ErrorState(error = uiState.error ?: "Error desconocido")
+                }
+                uiState.isLoading -> {
+                    LoadingState()
+                }
+                else -> {
+                    Column(
+                        Modifier.fillMaxSize()
                     ) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 48.dp),
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                            tonalElevation = if (showHeader) 0.dp else 2.dp
+                        // Header con animación suave
+                        AnimatedVisibility(
+                            visible = showHeader,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
                         ) {
-                            HomeHeader(
-                                selectedCategory = selectedCategory,
-                                onCategorySelected = viewModel::updateCategory,
-                                searchText = searchText,
-                                onSearchQueryChanged = viewModel::onSearchQueryChanged,
-                                sortBy = sortBy,
-                                onSortTypeSelected = viewModel::setSortType,
-                                inlineSearchActive = inlineSearchActive
-                            )
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 48.dp),
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                                tonalElevation = if (showHeader) 0.dp else 2.dp
+                            ) {
+                                HomeHeader(
+                                    selectedCategory = selectedCategory,
+                                    onCategorySelected = viewModel::updateCategory,
+                                    searchText = searchText,
+                                    onSearchQueryChanged = viewModel::onSearchQueryChanged,
+                                    sortBy = sortBy,
+                                    onSortTypeSelected = viewModel::setSortType,
+                                    inlineSearchActive = inlineSearchActive
+                                )
+                            }
                         }
-                    }
 
-                    // Content area con padding mejorado
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp)
-                    ) {
-                        when {
-                            uiState.isSearching -> {
-                                SearchingState()
-                            }
+                        // Content area con padding mejorado
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp)
+                        ) {
+                            when {
+                                uiState.isSearching -> {
+                                    SearchingState()
+                                }
+                                sortBy == HomeViewModel.SortType.FAVORITE -> {
+                                    FavoriteContent(
+                                        items = favoriteItems.filter { it.type == targetMediaType },
+                                        listState = listState,
+                                        viewModel = viewModel
+                                    )
+                                }
+                                !isOnline -> {
+                                    // Mostrar la caché local si no hay internet
+                                    LazyVerticalGrid(
+                                        state = listState,
+                                        columns = GridCells.Adaptive(160.dp),
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(top = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(vertical = 8.dp)
+                                    ) {
+                                        items(
+                                            items = cachedItems,
+                                            key = { it.id }
+                                        ) { item ->
+                                            val isFavorite by viewModel.isFavorite(item.id, item.type)
+                                                .collectAsState(initial = false)
 
-                            sortBy == HomeViewModel.SortType.FAVORITE -> {
-                                FavoriteContent(
-                                    items = favoriteItems.filter { it.type == targetMediaType },
-                                    listState = listState,
-                                    viewModel = viewModel
-                                )
-                            }
-
-                            else -> {
-                                MainContent(
-                                    pagedItems = pagedItems,
-                                    targetMediaType = targetMediaType,
-                                    listState = listState,
-                                    viewModel = viewModel
-                                )
+                                            MediaItemView(
+                                                mediaItem = item,
+                                                isFavorite = isFavorite,
+                                                onFavoriteClick = { mediaItem, newFavoriteState ->
+                                                    viewModel.toggleFavorite(mediaItem, newFavoriteState)
+                                                },
+                                                onItemClick = { viewModel.onMediaItemSelected(it) }
+                                            )
+                                        }
+                                    }
+                                }
+                                else -> {
+                                    MainContent(
+                                        pagedItems = pagedItems,
+                                        targetMediaType = targetMediaType,
+                                        listState = listState,
+                                        viewModel = viewModel
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        // Inline search overlay
-        AnimatedVisibility(
-            visible = inlineSearchActive,
-            enter = fadeIn() + expandVertically(expandFrom = Alignment.CenterVertically),
-            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.CenterVertically),
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .zIndex(10f)
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-                .padding(top = 60.dp)
-        ) {
-            InlineSearchTextField(
-                searchText = searchText,
-                onSearchQueryChanged = viewModel::onSearchQueryChanged,
-                selectedCategory = selectedCategory
-            )
-        }
+            // Inline search overlay
+            AnimatedVisibility(
+                visible = inlineSearchActive,
+                enter = fadeIn() + expandVertically(expandFrom = Alignment.CenterVertically),
+                exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.CenterVertically),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .zIndex(10f)
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(top = 60.dp)
+            ) {
+                InlineSearchTextField(
+                    searchText = searchText,
+                    onSearchQueryChanged = viewModel::onSearchQueryChanged,
+                    selectedCategory = selectedCategory
+                )
+            }
 
-        // Search FAB con mejor posicionamiento
-        AnimatedVisibility(
-            visible = !showHeader && !inlineSearchActive,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp)
-        ) {
-            SearchFab(
-                onClick = { viewModel.showInlineSearch() }
-            )
+            // Search FAB con mejor posicionamiento
+            AnimatedVisibility(
+                visible = !showHeader && !inlineSearchActive,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(24.dp)
+            ) {
+                SearchFab(
+                    onClick = { viewModel.showInlineSearch() }
+                )
+            }
+
+            // Indicador de modo offline
+            AnimatedVisibility(
+                visible = uiState.isOffline,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 8.dp)
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Text(
+                        text = "Modo sin conexión",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -408,7 +499,7 @@ private fun MainContent(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = "Error al cargar más elementos",
+                            text = "Sin conexión. Por favor, vuelve a conectar a internet para continuar cargando.",
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.padding(16.dp),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center

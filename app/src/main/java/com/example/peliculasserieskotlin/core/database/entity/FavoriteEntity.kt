@@ -1,4 +1,4 @@
-package com.example.peliculasserieskotlin.core.database
+package com.example.peliculasserieskotlin.core.database.entity
 
 import androidx.room.Entity
 

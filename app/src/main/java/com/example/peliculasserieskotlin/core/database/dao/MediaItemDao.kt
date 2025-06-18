@@ -1,9 +1,10 @@
-package com.example.peliculasserieskotlin.core.database
+package com.example.peliculasserieskotlin.core.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.example.peliculasserieskotlin.core.database.entity.MediaItemEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -26,6 +27,17 @@ interface MediaItemDao {
         """
     )
     fun getAllMedia(mediaType: String): Flow<List<MediaItemEntity>>
+
+    /**
+     * Obtiene todos los elementos sin filtrar por tipo.
+     */
+    @Query(
+        """
+        SELECT * FROM media_items
+        ORDER BY title ASC
+        """
+    )
+    fun getAllMediaItems(): Flow<List<MediaItemEntity>>
 
     /**
      * Obtiene elementos populares por tipo.
@@ -81,6 +93,18 @@ interface MediaItemDao {
      */
     @Query("SELECT * FROM media_items WHERE id IN (:ids)")
     suspend fun getMediaItemsByIds(ids: List<Int>): List<MediaItemEntity>
+
+    /**
+     * Obtiene todos los elementos de la tabla (sin Flow).
+     */
+    @Query("SELECT * FROM media_items")
+    suspend fun getAllMediaItemsList(): List<MediaItemEntity>
+
+    /**
+     * Borra un elemento por id y mediaType.
+     */
+    @Query("DELETE FROM media_items WHERE id = :itemId AND mediaType = :mediaType")
+    suspend fun deleteByIdAndType(itemId: Int, mediaType: String)
 
     /*──────────────────────  INSERT / UPDATE  ───────────────────────*/
 
