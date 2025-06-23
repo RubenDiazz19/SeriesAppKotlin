@@ -6,6 +6,7 @@ import com.example.peliculasserieskotlin.core.database.AppDatabase
 import com.example.peliculasserieskotlin.core.database.dao.FavoriteDao
 import com.example.peliculasserieskotlin.core.database.dao.MediaItemDao
 import com.example.peliculasserieskotlin.core.database.dao.MediaDetailDao
+import com.example.peliculasserieskotlin.core.database.dao.UserDao
 import com.example.peliculasserieskotlin.core.util.NetworkUtils
 import com.example.peliculasserieskotlin.data.MovieApiService
 import com.example.peliculasserieskotlin.data.SeriesApiService
@@ -14,6 +15,7 @@ import com.example.peliculasserieskotlin.features.shared.repository.FavoriteRepo
 import com.example.peliculasserieskotlin.features.shared.repository.MediaRepository
 import com.example.peliculasserieskotlin.features.shared.repository.RoomMediaRepository
 import com.example.peliculasserieskotlin.features.shared.repository.SmartMediaRepository
+import com.example.peliculasserieskotlin.features.shared.repository.UserRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -71,6 +73,7 @@ object AppModule {
     @Provides fun provideMediaItemDao(db: AppDatabase): MediaItemDao = db.mediaItemDao()
     @Provides fun provideFavoriteDao(db: AppDatabase): FavoriteDao = db.favoriteDao()
     @Provides fun provideMediaDetailDao(db: AppDatabase): MediaDetailDao = db.mediaDetailDao()
+    @Provides fun provideUserDao(db: AppDatabase): UserDao = db.userDao()
 
     /*----------------- Utils -----------------*/
 
@@ -115,4 +118,8 @@ object AppModule {
         mediaItemDao: MediaItemDao
     ): FavoriteRepository =
         FavoriteRepository(favoriteDao, mediaItemDao)
+
+    @Provides
+    @Singleton
+    fun provideUserRepository(userDao: UserDao): UserRepository = UserRepository(userDao)
 }

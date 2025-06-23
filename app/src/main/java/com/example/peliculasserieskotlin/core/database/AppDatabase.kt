@@ -8,6 +8,8 @@ import com.example.peliculasserieskotlin.core.database.dao.MediaItemDao
 import com.example.peliculasserieskotlin.core.database.entity.FavoriteEntity
 import com.example.peliculasserieskotlin.core.database.entity.MediaDetailEntity
 import com.example.peliculasserieskotlin.core.database.entity.MediaItemEntity
+import com.example.peliculasserieskotlin.core.database.entity.UserEntity
+import com.example.peliculasserieskotlin.core.database.dao.UserDao
 
 /**
  * Base de datos Room de la aplicación.
@@ -17,13 +19,15 @@ import com.example.peliculasserieskotlin.core.database.entity.MediaItemEntity
     entities = [
         MediaItemEntity::class,
         FavoriteEntity::class,
-        MediaDetailEntity::class
+        MediaDetailEntity::class,
+        UserEntity::class
     ], 
-    version = 2, 
+    version = 3, 
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun mediaItemDao(): MediaItemDao
     abstract fun favoriteDao(): FavoriteDao
     abstract fun mediaDetailDao(): MediaDetailDao
+    abstract fun userDao(): UserDao
 }

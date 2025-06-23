@@ -33,7 +33,9 @@ fun HomeHeader(
     onSearchQueryChanged: (String) -> Unit,
     sortBy: HomeViewModel.SortType,
     onSortTypeSelected: (HomeViewModel.SortType) -> Unit,
-    inlineSearchActive: Boolean
+    inlineSearchActive: Boolean,
+    showFavoriteSort: Boolean = true,
+    isGuest: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -134,13 +136,16 @@ fun HomeHeader(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            SortButton(
-                isSelected = sortBy == HomeViewModel.SortType.FAVORITE,
-                icon = Icons.Default.Favorite,
-                contentDescription = "Ver favoritos",
-                selectedColor = Color(0xFFE91E63),
-                onClick = { onSortTypeSelected(HomeViewModel.SortType.FAVORITE) }
-            )
+            // Solo mostrar el botón de favoritos si no es invitado y showFavoriteSort es true
+            if (showFavoriteSort && !isGuest) {
+                SortButton(
+                    isSelected = sortBy == HomeViewModel.SortType.FAVORITE,
+                    icon = Icons.Default.Favorite,
+                    contentDescription = "Ver favoritos",
+                    selectedColor = Color(0xFFE91E63),
+                    onClick = { onSortTypeSelected(HomeViewModel.SortType.FAVORITE) }
+                )
+            }
         }
     }
 }

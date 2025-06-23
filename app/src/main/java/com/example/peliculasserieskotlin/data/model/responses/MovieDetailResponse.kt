@@ -1,4 +1,4 @@
-package com.example.peliculasserieskotlin.data.model
+package com.example.peliculasserieskotlin.data.model.responses
 
 import com.example.peliculasserieskotlin.core.model.MediaType
 import com.example.peliculasserieskotlin.core.model.GenreItem
@@ -6,27 +6,27 @@ import com.example.peliculasserieskotlin.core.model.ProductionCompanyItem
 import com.example.peliculasserieskotlin.core.model.ProductionCountryItem
 import com.example.peliculasserieskotlin.core.model.SpokenLanguageItem
 import com.example.peliculasserieskotlin.core.model.MediaDetailItem
+import com.example.peliculasserieskotlin.data.model.MediaConstants
 import com.google.gson.annotations.SerializedName
-import java.time.LocalDate
 
 /**
- * Modelo que representa los detalles completos de una serie desde la API TMDB.
+ * Modelo que representa los detalles completos de una película desde la API TMDB.
  */
-data class SeriesDetailResponse(
+data class MovieDetailResponse(
     @SerializedName("id")
-    val id: Int?,                   // ID único de la serie
+    val id: Int?,                   // ID único de la película
     
-    @SerializedName("name")
-    val name: String?,              // Nombre de la serie
+    @SerializedName("title")
+    val title: String?,             // Título de la película
     
-    @SerializedName("original_name")
-    val originalName: String?,      // Nombre original
+    @SerializedName("original_title")
+    val originalTitle: String?,     // Título original
     
-    @SerializedName("first_air_date")
-    val firstAirDate: String?,      // Fecha de primera emisión
+    @SerializedName("release_date")
+    val releaseDate: String?,       // Fecha de lanzamiento
     
     @SerializedName("overview")
-    val overview: String?,          // Descripción de la serie
+    val overview: String?,          // Descripción de la película
     
     @SerializedName("poster_path")
     val posterPath: String?,        // Ruta al póster
@@ -43,20 +43,20 @@ data class SeriesDetailResponse(
     @SerializedName("popularity")
     val popularity: Double?,        // Popularidad
     
-    @SerializedName("episode_run_time")
-    val episodeRunTime: List<Int>?, // Duración de episodios en minutos
+    @SerializedName("runtime")
+    val runtime: Int?,              // Duración en minutos
     
-    @SerializedName("number_of_episodes")
-    val numberOfEpisodes: Int?,     // Número de episodios
+    @SerializedName("budget")
+    val budget: Long?,              // Presupuesto
     
-    @SerializedName("number_of_seasons")
-    val numberOfSeasons: Int?,      // Número de temporadas
+    @SerializedName("revenue")
+    val revenue: Long?,             // Ingresos
     
     @SerializedName("tagline")
     val tagline: String?,           // Eslogan
     
     @SerializedName("status")
-    val status: String?,            // Estado (En emisión, Finalizada, etc.)
+    val status: String?,            // Estado (Released, In Production, etc.)
     
     @SerializedName("genres")
     val genres: List<Genre>?,       // Géneros
@@ -68,39 +68,45 @@ data class SeriesDetailResponse(
     val productionCountries: List<ProductionCountry>?, // Países de producción
     
     @SerializedName("spoken_languages")
-    val spokenLanguages: List<SpokenLanguage>?, // Idiomas hablados
+    val spokenLanguages: List<SpokenLanguage>?,       // Idiomas hablados
     
-    @SerializedName("networks")
-    val networks: List<NetworkResponse>? // Redes de televisión
+    @SerializedName("imdb_id")
+    val imdbId: String?,            // ID de IMDB
+    
+    @SerializedName("homepage")
+    val homepage: String?,          // Página web oficial
+    
+    @SerializedName("adult")
+    val adult: Boolean?             // Contenido para adultos
 ) {
     /**
      * Valida que los campos críticos no sean nulos.
      * @return true si los campos críticos son válidos
      */
     fun isValid(): Boolean {
-        return id != null && name != null
+        return id != null && title != null
     }
 
     /**
-     * Convierte un SeriesDetailResponse a un MediaDetailItem del dominio con todos los detalles.
+     * Convierte un MovieDetailResponse a un MediaDetailItem del dominio con todos los detalles.
      * Maneja valores nulos con valores predeterminados.
      */
-    fun toDetailedDomain(): MediaDetailItem.SeriesDetailItem {
-        require(isValid()) { "SeriesDetailResponse no es válido: id o name son nulos" }
+    fun toDetailedDomain(): MediaDetailItem.MovieDetailItem {
+        require(isValid()) { "MovieDetailResponse no es válido: id o title son nulos" }
         
-        return MediaDetailItem.SeriesDetailItem(
+        return MediaDetailItem.MovieDetailItem(
             id = id ?: 0,
-            title = name ?: "Serie desconocida",
+            title = title ?: "Título desconocido",
             overview = overview ?: "Sin descripción",
             posterUrl = MediaConstants.formatImageUrl(posterPath),
             backdropUrl = MediaConstants.formatImageUrl(backdropPath, MediaConstants.DEFAULT_BACKDROP_SIZE),
             voteAverage = voteAverage ?: 0.0,
-            originalTitle = originalName,
-            firstAirDate = firstAirDate,
+            originalTitle = originalTitle,
+            releaseDate = releaseDate,
             voteCount = voteCount,
-            runtime = episodeRunTime?.firstOrNull(),
-            numberOfSeasons = numberOfSeasons,
-            numberOfEpisodes = numberOfEpisodes,
+            runtime = runtime,
+            budget = budget,
+            revenue = revenue,
             genres = genres?.mapNotNull { it.id?.let { genreId -> GenreItem(genreId, it.name ?: "") } },
             productionCompanies = productionCompanies?.mapNotNull {
                 ProductionCompanyItem(
@@ -117,24 +123,63 @@ data class SeriesDetailResponse(
             },
             status = status,
             tagline = tagline,
-            type = MediaType.SERIES
+            type = MediaType.MOVIE
         )
     }
 }
 
 /**
- * Modelo para representar una red de televisión
+ * Modelo para representar un género de película.
  */
-data class NetworkResponse(
+data class Genre(
     @SerializedName("id")
     val id: Int?,
     
     @SerializedName("name")
-    val name: String?,
+    val name: String?
+)
+
+/**
+ * Modelo para representar una compañía productora.
+ */
+data class ProductionCompany(
+    @SerializedName("id")
+    val id: Int?,
     
     @SerializedName("logo_path")
-    val logoPath: String?
+    val logoPath: String?,
+    
+    @SerializedName("name")
+    val name: String?,
+    
+    @SerializedName("origin_country")
+    val originCountry: String?
+)
+
+/**
+ * Modelo para representar un país de producción.
+ */
+data class ProductionCountry(
+    @SerializedName("iso_3166_1")
+    val iso3166_1: String?,
+    
+    @SerializedName("name")
+    val name: String?
+)
+
+/**
+ * Modelo para representar un idioma hablado en la película.
+ */
+data class SpokenLanguage(
+    @SerializedName("english_name")
+    val englishName: String?,
+    
+    @SerializedName("iso_639_1")
+    val iso639_1: String?,
+    
+    @SerializedName("name")
+    val name: String?
 )
 
 // Función de extensión para compatibilidad
-fun SeriesDetailResponse.toDetailedDomain(): MediaDetailItem.SeriesDetailItem = this.toDetailedDomain()
+fun MovieDetailResponse.toDetailedDomain(): MediaDetailItem.MovieDetailItem = this.toDetailedDomain()

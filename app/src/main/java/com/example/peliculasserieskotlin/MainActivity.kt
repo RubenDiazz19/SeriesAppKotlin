@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -22,12 +23,16 @@ import com.example.peliculasserieskotlin.features.home.HomeScreen
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
 import com.example.peliculasserieskotlin.ui.theme.PeliculasSeriesKotlinTheme
 import dagger.hilt.android.AndroidEntryPoint
+import com.example.peliculasserieskotlin.features.auth.LoginScreen
+import com.example.peliculasserieskotlin.features.auth.RegisterScreen
+import com.example.peliculasserieskotlin.features.auth.AuthViewModel
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val homeViewModel: HomeViewModel by viewModels()
     private val detailViewModel: MediaDetailViewModel by viewModels()
+    private val authViewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +43,11 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigator(homeViewModel = homeViewModel, detailViewModel = detailViewModel)
+                    AppNavigator(
+                        homeViewModel = homeViewModel,
+                        detailViewModel = detailViewModel,
+                        authViewModel = authViewModel
+                    )
                 }
             }
         }
@@ -48,46 +57,74 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigator(
     homeViewModel: HomeViewModel,
-    detailViewModel: MediaDetailViewModel
+    detailViewModel: MediaDetailViewModel,
+    authViewModel: AuthViewModel
 ) {
     val navController = rememberNavController()
+    val authState by authViewModel.authState.collectAsState()
+    val isGuest = authState is com.example.peliculasserieskotlin.features.auth.AuthState.Guest
+    android.util.Log.d("DEBUG", "[AppNavigator] isGuest: $isGuest, authState: $authState")
 
-    NavHost(navController = navController, startDestination = "home") {
-        composable("home") {
-            HomeScreen(
-                viewModel = homeViewModel,
-                onNavigateToDetail = { id, type ->
-                    navController.navigate("detail/${type.name.lowercase()}/$id")
+    when (authState) {
+        is com.example.peliculasserieskotlin.features.auth.AuthState.Idle,
+        is com.example.peliculasserieskotlin.features.auth.AuthState.Error -> {
+            NavHost(navController = navController, startDestination = "login") {
+                composable("login") {
+                    LoginScreen(
+                        onLoginSuccess = { /* No navegues aquí, la navegación depende de authState */ },
+                        onNavigateToRegister = { navController.navigate("register") },
+                        viewModel = authViewModel
+                    )
                 }
-            )
+                composable("register") {
+                    RegisterScreen(
+                        onRegisterSuccess = { /* No navegues aquí, la navegación depende de authState */ },
+                        onNavigateToLogin = { navController.popBackStack() },
+                        viewModel = authViewModel
+                    )
+                }
+            }
         }
-
-        composable(
-            route = "detail/{type}/{id}",
-            arguments = listOf(
-                navArgument("type") { type = NavType.StringType },
-                navArgument("id")   { type = NavType.IntType }
-            )
-        ) { backStackEntry ->
-            val id = backStackEntry.arguments!!.getInt("id")
-            val type = MediaType.valueOf(
-                backStackEntry.arguments!!.getString("type")!!.uppercase()
-            )
-            
-            // Cargar los detalles
-            detailViewModel.loadDetail(id, type)
-            
-            // Obtener el estado actual
-            val detailState by detailViewModel.uiState.collectAsState()
-            
-            // Mostrar la pantalla de detalles
-            if (detailState != null) {
-                com.example.peliculasserieskotlin.features.details.MediaDetailScreen(
-                    mediaId = id,
-                    type = type,
-                    viewModel = detailViewModel,
-                    onBack = { navController.popBackStack() }
-                )
+        is com.example.peliculasserieskotlin.features.auth.AuthState.LoginSuccess,
+        is com.example.peliculasserieskotlin.features.auth.AuthState.RegisterSuccess,
+        is com.example.peliculasserieskotlin.features.auth.AuthState.Guest -> {
+            // Solo aquí se permite cargar HomeScreen y los datos
+            LaunchedEffect(isGuest) {
+                homeViewModel.setGuestMode(isGuest)
+            }
+            NavHost(navController = navController, startDestination = "home") {
+                composable("home") {
+                    HomeScreen(
+                        viewModel = homeViewModel,
+                        onNavigateToDetail = { id, type ->
+                            navController.navigate("detail/${type.name.lowercase()}/$id")
+                        },
+                        isGuest = isGuest
+                    )
+                }
+                composable(
+                    route = "detail/{type}/{id}",
+                    arguments = listOf(
+                        navArgument("type") { type = NavType.StringType },
+                        navArgument("id")   { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val id = backStackEntry.arguments!!.getInt("id")
+                    val type = MediaType.valueOf(
+                        backStackEntry.arguments!!.getString("type")!!.uppercase()
+                    )
+                    detailViewModel.loadDetail(id, type)
+                    val detailState by detailViewModel.uiState.collectAsState()
+                    if (detailState != null) {
+                        com.example.peliculasserieskotlin.features.details.MediaDetailScreen(
+                            mediaId = id,
+                            type = type,
+                            viewModel = detailViewModel,
+                            onBack = { navController.popBackStack() },
+                            isGuest = isGuest
+                        )
+                    }
+                }
             }
         }
     }

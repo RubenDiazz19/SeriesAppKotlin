@@ -45,6 +45,7 @@ import coil.compose.AsyncImage
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
 import com.example.peliculasserieskotlin.features.shared.components.rememberFavoriteState
+import android.util.Log
 
 /**
  * Componente reutilizable para mostrar una tarjeta de media (película o serie)
@@ -59,8 +60,10 @@ fun MediaCard(
     style: MediaCardStyle = MediaCardStyle.GRID,
     showRating: Boolean = true,
     showTitle: Boolean = true,
+    showFavoriteIcon: Boolean = true,
     modifier: Modifier = Modifier
 ) {
+    Log.d("DEBUG", "[MediaCard] showFavoriteIcon: $showFavoriteIcon, item: ${mediaItem.title}")
     when (style) {
         MediaCardStyle.GRID -> GridMediaCard(
             mediaItem = mediaItem,
@@ -69,6 +72,7 @@ fun MediaCard(
             onItemClick = onItemClick,
             showRating = showRating,
             showTitle = showTitle,
+            showFavoriteIcon = showFavoriteIcon,
             modifier = modifier
         )
         MediaCardStyle.ROW -> RowMediaCard(
@@ -77,6 +81,7 @@ fun MediaCard(
             onFavoriteClick = onFavoriteClick,
             onItemClick = onItemClick,
             showRating = showRating,
+            showFavoriteIcon = showFavoriteIcon,
             modifier = modifier
         )
         MediaCardStyle.COMPACT -> CompactMediaCard(
@@ -96,6 +101,7 @@ private fun GridMediaCard(
     onItemClick: ((mediaItem: MediaItem) -> Unit)?,
     showRating: Boolean,
     showTitle: Boolean,
+    showFavoriteIcon: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val (localFavorite, toggleFavorite) = rememberFavoriteState(
@@ -151,7 +157,7 @@ private fun GridMediaCard(
                         )
                     }
                     
-                    if (onFavoriteClick != null) {
+                    if (showFavoriteIcon && onFavoriteClick != null) {
                         IconButton(
                             onClick = toggleFavorite,
                             modifier = Modifier.size(24.dp)
@@ -212,6 +218,7 @@ private fun RowMediaCard(
     onFavoriteClick: ((mediaItem: MediaItem, isFavorite: Boolean) -> Unit)?,
     onItemClick: ((mediaItem: MediaItem) -> Unit)?,
     showRating: Boolean,
+    showFavoriteIcon: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val (localFavorite, toggleFavorite) = rememberFavoriteState(
@@ -291,7 +298,7 @@ private fun RowMediaCard(
             }
             
             // Botón de favorito
-            if (onFavoriteClick != null) {
+            if (showFavoriteIcon && onFavoriteClick != null) {
                 Box(
                     modifier = Modifier
                         .padding(8.dp)

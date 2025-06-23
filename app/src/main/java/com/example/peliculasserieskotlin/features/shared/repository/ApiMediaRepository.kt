@@ -12,8 +12,6 @@ import com.example.peliculasserieskotlin.core.model.MediaType
 import com.example.peliculasserieskotlin.core.paging.MediaPagingSource
 import com.example.peliculasserieskotlin.data.MovieApiService
 import com.example.peliculasserieskotlin.data.SeriesApiService
-import com.example.peliculasserieskotlin.data.model.toDetailedDomain
-import com.example.peliculasserieskotlin.data.model.toDomain
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
 import com.example.peliculasserieskotlin.core.util.AppResult
 import dagger.hilt.android.qualifiers.ApplicationContext

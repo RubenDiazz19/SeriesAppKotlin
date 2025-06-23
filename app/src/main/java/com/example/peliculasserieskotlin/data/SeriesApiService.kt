@@ -1,7 +1,7 @@
 package com.example.peliculasserieskotlin.data
 
 import com.example.peliculasserieskotlin.data.model.SeriesApiResponse
-import com.example.peliculasserieskotlin.data.model.SeriesDetailResponse
+import com.example.peliculasserieskotlin.data.model.responses.SeriesDetailResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query

@@ -23,7 +23,7 @@ import androidx.compose.ui.zIndex
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.peliculasserieskotlin.core.model.MediaType
-import com.example.peliculasserieskotlin.features.shared.components.MediaItemView
+import com.example.peliculasserieskotlin.features.shared.components.MediaCard
 import com.example.peliculasserieskotlin.features.shared.components.HomeHeader
 import com.example.peliculasserieskotlin.features.shared.components.InlineSearchTextField
 import com.example.peliculasserieskotlin.features.shared.components.SearchFab
@@ -31,13 +31,16 @@ import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import com.example.peliculasserieskotlin.core.util.NetworkUtils
+import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    onNavigateToDetail: (Int, MediaType) -> Unit
+    onNavigateToDetail: (Int, MediaType) -> Unit,
+    isGuest: Boolean = false
 ) {
+    Log.d("DEBUG", "[HomeScreen] isGuest: $isGuest")
     val uiState by viewModel.uiState.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val sortBy by viewModel.sortBy.collectAsState()
@@ -145,6 +148,7 @@ fun HomeScreen(
                                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                                 tonalElevation = if (showHeader) 0.dp else 2.dp
                             ) {
+                                Log.d("DEBUG", "[HomeHeader] isGuest: $isGuest")
                                 HomeHeader(
                                     selectedCategory = selectedCategory,
                                     onCategorySelected = viewModel::updateCategory,
@@ -152,7 +156,9 @@ fun HomeScreen(
                                     onSearchQueryChanged = viewModel::onSearchQueryChanged,
                                     sortBy = sortBy,
                                     onSortTypeSelected = viewModel::setSortType,
-                                    inlineSearchActive = inlineSearchActive
+                                    inlineSearchActive = inlineSearchActive,
+                                    showFavoriteSort = !isGuest,
+                                    isGuest = isGuest
                                 )
                             }
                         }
@@ -167,11 +173,22 @@ fun HomeScreen(
                                 uiState.isSearching -> {
                                     SearchingState()
                                 }
-                                sortBy == HomeViewModel.SortType.FAVORITE -> {
+                                !isGuest && sortBy == HomeViewModel.SortType.FAVORITE -> {
                                     FavoriteContent(
                                         items = favoriteItems.filter { it.type == targetMediaType },
                                         listState = listState,
-                                        viewModel = viewModel
+                                        viewModel = viewModel,
+                                        isGuest = isGuest
+                                    )
+                                }
+                                isGuest && sortBy == HomeViewModel.SortType.FAVORITE -> {
+                                    // Si es invitado y está en modo favoritos, mostrar contenido normal
+                                    MainContent(
+                                        pagedItems = pagedItems,
+                                        targetMediaType = targetMediaType,
+                                        listState = listState,
+                                        viewModel = viewModel,
+                                        isGuest = isGuest
                                     )
                                 }
                                 !isOnline -> {
@@ -193,13 +210,12 @@ fun HomeScreen(
                                             val isFavorite by viewModel.isFavorite(item.id, item.type)
                                                 .collectAsState(initial = false)
 
-                                            MediaItemView(
+                                            MediaCard(
                                                 mediaItem = item,
                                                 isFavorite = isFavorite,
-                                                onFavoriteClick = { mediaItem, newFavoriteState ->
-                                                    viewModel.toggleFavorite(mediaItem, newFavoriteState)
-                                                },
-                                                onItemClick = { viewModel.onMediaItemSelected(it) }
+                                                onFavoriteClick = if (!isGuest) { { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) } } else null,
+                                                onItemClick = { viewModel.onMediaItemSelected(it) },
+                                                showFavoriteIcon = !isGuest
                                             )
                                         }
                                     }
@@ -209,7 +225,8 @@ fun HomeScreen(
                                         pagedItems = pagedItems,
                                         targetMediaType = targetMediaType,
                                         listState = listState,
-                                        viewModel = viewModel
+                                        viewModel = viewModel,
+                                        isGuest = isGuest
                                     )
                                 }
                             }
@@ -361,7 +378,8 @@ private fun SearchingState() {
 private fun FavoriteContent(
     items: List<com.example.peliculasserieskotlin.core.model.MediaItem>,
     listState: LazyGridState,
-    viewModel: HomeViewModel
+    viewModel: HomeViewModel,
+    isGuest: Boolean
 ) {
     if (items.isEmpty()) {
         EmptyFavorites()
@@ -383,13 +401,12 @@ private fun FavoriteContent(
                 val isFavorite by viewModel.isFavorite(item.id, item.type)
                     .collectAsState(initial = false)
 
-                MediaItemView(
+                MediaCard(
                     mediaItem = item,
                     isFavorite = isFavorite,
-                    onFavoriteClick = { mediaItem, newFavoriteState ->
-                        viewModel.toggleFavorite(mediaItem, newFavoriteState)
-                    },
-                    onItemClick = { viewModel.onMediaItemSelected(it) }
+                    onFavoriteClick = if (!isGuest) { { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) } } else null,
+                    onItemClick = { viewModel.onMediaItemSelected(it) },
+                    showFavoriteIcon = !isGuest
                 )
             }
         }
@@ -440,8 +457,10 @@ private fun MainContent(
     pagedItems: androidx.paging.compose.LazyPagingItems<com.example.peliculasserieskotlin.core.model.MediaItem>,
     targetMediaType: MediaType,
     listState: LazyGridState,
-    viewModel: HomeViewModel
+    viewModel: HomeViewModel,
+    isGuest: Boolean
 ) {
+    Log.d("DEBUG", "[MainContent] isGuest: $isGuest")
     LazyVerticalGrid(
         state = listState,
         columns = GridCells.Adaptive(160.dp),
@@ -457,14 +476,13 @@ private fun MainContent(
             if (item != null && item.type == targetMediaType) {
                 val isFavorite by viewModel.isFavorite(item.id, item.type)
                     .collectAsState(initial = false)
-
-                MediaItemView(
+                Log.d("DEBUG", "[MediaCard] isGuest: $isGuest, item: ${item.title}")
+                MediaCard(
                     mediaItem = item,
                     isFavorite = isFavorite,
-                    onFavoriteClick = { mediaItem, newFavoriteState ->
-                        viewModel.toggleFavorite(mediaItem, newFavoriteState)
-                    },
-                    onItemClick = { viewModel.onMediaItemSelected(it) }
+                    onFavoriteClick = if (!isGuest) { { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) } } else null,
+                    onItemClick = { viewModel.onMediaItemSelected(it) },
+                    showFavoriteIcon = !isGuest
                 )
             }
         }

@@ -52,14 +52,34 @@ class HomeViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow<String?>(null)
 
+    // Variable para controlar si el usuario es invitado
+    private var _isGuest = false
+    fun setGuestMode(isGuest: Boolean) {
+        _isGuest = isGuest
+        // Si es invitado y está en modo favoritos, cambiar a rating
+        if (isGuest && _sortBy.value == SortType.FAVORITE) {
+            _sortBy.value = SortType.RATING
+        }
+    }
+
     val pagedMediaItems: StateFlow<Flow<PagingData<MediaItem>>> = combine(
         _selectedCategory,
         _sortBy,
         _searchQuery
     ) { category, sort, query ->
         val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
-        if (sort == SortType.FAVORITE) {
+        if (sort == SortType.FAVORITE && !_isGuest) {
             flowOf(PagingData.empty())
+        } else if (sort == SortType.FAVORITE && _isGuest) {
+            // Si es invitado y está en modo favoritos, cambiar a rating automáticamente
+            _sortBy.value = SortType.RATING
+            try {
+                mediaRepository.getPagedMedia(mediaType, SortType.RATING, query)
+                    .cachedIn(viewModelScope)
+            } catch (e: Exception) {
+                updateError(e.localizedMessage ?: "Error al cargar los datos")
+                flowOf(PagingData.empty())
+            }
         } else {
             try {
                 mediaRepository.getPagedMedia(mediaType, sort, query)
@@ -79,7 +99,7 @@ class HomeViewModel @Inject constructor(
         _selectedCategory,
         _sortBy
     ) { category, sort ->
-        if (sort == SortType.FAVORITE) {
+        if (sort == SortType.FAVORITE && !_isGuest) {
             val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
             try {
                 favoriteRepository.getFavoriteMedia(mediaType)
@@ -144,6 +164,9 @@ class HomeViewModel @Inject constructor(
     }
 
     fun toggleFavorite(item: MediaItem, isFav: Boolean) = viewModelScope.launch {
+        // No permitir favoritos si es invitado
+        if (_isGuest) return@launch
+        
         try {
             if (isFav) favoriteRepository.addFavorite(item)
             else favoriteRepository.removeFavorite(item.id, item.type)
@@ -153,7 +176,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun isFavorite(id: Int, type: MediaType): Flow<Boolean> =
-        favoriteRepository.isFavorite(id, type)
+        if (_isGuest) flowOf(false) else favoriteRepository.isFavorite(id, type)
 
     fun showInlineSearch() {
         _inlineSearchActive.value = true
@@ -192,6 +215,8 @@ class HomeViewModel @Inject constructor(
 
     fun setSortType(type: SortType) {
         if (_sortBy.value == type) return
+        // No permitir cambiar a favoritos si es invitado
+        if (type == SortType.FAVORITE && _isGuest) return
         _sortBy.value = type
     }
 
