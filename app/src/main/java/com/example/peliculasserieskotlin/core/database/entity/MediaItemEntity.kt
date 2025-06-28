@@ -5,6 +5,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Index
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
+import com.google.gson.Gson
+import com.example.peliculasserieskotlin.core.model.GenreItem
 
 /**
  * Entidad que representa un elemento multimedia en la base de datos.
@@ -22,13 +24,19 @@ data class MediaItemEntity(
     val posterUrl: String,     // URL del póster
     val backdropUrl: String?,  // URL de imagen de fondo
     val voteAverage: Double,   // Valoración media
-    val mediaType: String      // Tipo: "MOVIE" o "SERIES"
+    val mediaType: String,     // Tipo: "MOVIE" o "SERIES"
+    val genres: String? = null // Géneros en formato JSON
 )
 
 /**
  * Convierte una entidad a objeto de dominio.
  */
 fun MediaItemEntity.toDomain(): MediaItem {
+    val gson = Gson()
+    val genresList = genres?.let {
+        val type = object : com.google.gson.reflect.TypeToken<List<GenreItem>>() {}.type
+        gson.fromJson<List<GenreItem>>(it, type)
+    }
     return MediaItem(
         id = id,
         title = title,
@@ -36,7 +44,8 @@ fun MediaItemEntity.toDomain(): MediaItem {
         posterUrl = posterUrl,
         backdropUrl = backdropUrl,
         voteAverage = voteAverage,
-        type = MediaType.valueOf(mediaType)
+        type = MediaType.valueOf(mediaType),
+        genres = genresList
     )
 }
 
@@ -44,6 +53,7 @@ fun MediaItemEntity.toDomain(): MediaItem {
  * Convierte un objeto de dominio a entidad.
  */
 fun MediaItem.toEntity(): MediaItemEntity {
+    val gson = Gson()
     return MediaItemEntity(
         id = id,
         title = title,
@@ -51,6 +61,7 @@ fun MediaItem.toEntity(): MediaItemEntity {
         posterUrl = posterUrl,
         backdropUrl = backdropUrl,
         voteAverage = voteAverage,
-        mediaType = type.name
+        mediaType = type.name,
+        genres = genres?.let { gson.toJson(it) }
     )
 }

@@ -17,5 +17,6 @@ open class MediaItem(
     open val posterUrl: String,     // URL del póster
     open val backdropUrl: String?,  // URL de imagen de fondo
     open val voteAverage: Double,   // Puntuación (0-10)
-    open val type: MediaType        // Tipo (MOVIE o SERIES)
+    open val type: MediaType,       // Tipo (MOVIE o SERIES)
+    open val genres: List<GenreItem>? = null // Lista de géneros opcional
 )

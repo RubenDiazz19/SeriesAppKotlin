@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -172,27 +173,29 @@ private fun GridMediaCard(
                 }
                 
                 // Indicador de tipo (película o serie)
-                Box(
+                Row(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(8.dp)
-                        .background(
-                            color = when (mediaItem.type) {
-                                MediaType.MOVIE -> MaterialTheme.colorScheme.primary
-                                MediaType.SERIES -> MaterialTheme.colorScheme.secondary
-                            },
-                            shape = RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .padding(start = 8.dp, bottom = 8.dp)
                 ) {
-                    Text(
-                        text = when (mediaItem.type) {
-                            MediaType.MOVIE -> "Película"
-                            MediaType.SERIES -> "Serie"
-                        },
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall
-                    )
+                    mediaItem.genres?.take(2)?.forEachIndexed { idx, genre ->
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = genre.name,
+                                color = Color.White,
+                                fontSize = MaterialTheme.typography.labelSmall.fontSize.times(0.85f),
+                                maxLines = 1
+                            )
+                        }
+                        if (idx < 1) Spacer(modifier = Modifier.width(12.dp))
+                    }
                 }
             }
         }
@@ -253,7 +256,6 @@ private fun RowMediaCard(
                     .fillMaxHeight()
                     .weight(1f)
                     .padding(8.dp),
-                verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = mediaItem.title,
@@ -281,19 +283,27 @@ private fun RowMediaCard(
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
-                    
-                    // Tipo
-                    Text(
-                        text = when (mediaItem.type) {
-                            MediaType.MOVIE -> "Película"
-                            MediaType.SERIES -> "Serie"
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = when (mediaItem.type) {
-                            MediaType.MOVIE -> MaterialTheme.colorScheme.primary
-                            MediaType.SERIES -> MaterialTheme.colorScheme.secondary
+                    // Etiquetas de géneros (máximo 2)
+                    Row {
+                        mediaItem.genres?.take(2)?.forEachIndexed { idx, genre ->
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = genre.name,
+                                    color = Color.White,
+                                    fontSize = MaterialTheme.typography.labelSmall.fontSize.times(0.85f),
+                                    maxLines = 1
+                                )
+                            }
+                            if (idx < 1) Spacer(modifier = Modifier.width(12.dp))
                         }
-                    )
+                    }
                 }
             }
             
@@ -340,7 +350,31 @@ private fun CompactMediaCard(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            
+            // Etiquetas de géneros (máximo 2)
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 4.dp, top = 4.dp)
+            ) {
+                mediaItem.genres?.take(2)?.forEachIndexed { idx, genre ->
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = genre.name,
+                            color = Color.White,
+                            fontSize = MaterialTheme.typography.labelSmall.fontSize.times(0.85f),
+                            maxLines = 1
+                        )
+                    }
+                    if (idx < 1) Spacer(modifier = Modifier.width(12.dp))
+                }
+            }
             // Título en la parte inferior
             Box(
                 modifier = Modifier

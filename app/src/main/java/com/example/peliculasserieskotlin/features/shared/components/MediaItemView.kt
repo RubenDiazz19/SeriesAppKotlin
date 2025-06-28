@@ -93,6 +93,32 @@ fun MediaItemView(
                         )
                     }
                 }
+
+                // Etiquetas de géneros
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 8.dp, bottom = 8.dp)
+                ) {
+                    mediaItem.genres?.take(2)?.forEachIndexed { idx, genre ->
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = genre.name,
+                                color = Color.White,
+                                fontSize = MaterialTheme.typography.labelSmall.fontSize.times(0.85f),
+                                maxLines = 1
+                            )
+                        }
+                        if (idx < 1) Spacer(modifier = Modifier.width(12.dp))
+                    }
+                }
             }
         }
 

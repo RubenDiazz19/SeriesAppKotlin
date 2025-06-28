@@ -1,5 +1,6 @@
 package com.example.peliculasserieskotlin.data.model
 
+import com.example.peliculasserieskotlin.core.model.GenreItem
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
 import com.google.gson.annotations.SerializedName
@@ -28,7 +29,10 @@ data class SeriesApiModel(
     val backdropPath: String?,   // Ruta a la imagen de fondo
     
     @SerializedName("vote_average")
-    val voteAverage: Double?     // Puntuación (0-10)
+    val voteAverage: Double?,    // Puntuación (0-10)
+    
+    @SerializedName("genre_ids")
+    val genreIds: List<Int>? = null // IDs de géneros
 ) {
     /**
      * Valida que los campos críticos no sean nulos.
@@ -52,7 +56,8 @@ data class SeriesApiModel(
             posterUrl = MediaConstants.formatImageUrl(posterPath),
             backdropUrl = MediaConstants.formatImageUrl(backdropPath, MediaConstants.DEFAULT_BACKDROP_SIZE),
             voteAverage = voteAverage ?: 0.0,
-            type = MediaType.SERIES
+            type = MediaType.SERIES,
+            genres = genreIds?.mapNotNull { id -> GenreItem(id, genreIdToName(id)) }
         )
     }
 }

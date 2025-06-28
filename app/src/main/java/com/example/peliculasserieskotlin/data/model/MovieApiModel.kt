@@ -1,5 +1,6 @@
 package com.example.peliculasserieskotlin.data.model
 
+import com.example.peliculasserieskotlin.core.model.GenreItem
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
 import com.google.gson.annotations.SerializedName
@@ -29,7 +30,10 @@ data class MovieApiModel(
     val backdropPath: String?,   // Ruta a la imagen de fondo
     
     @SerializedName("vote_average")
-    val voteAverage: Double?     // Puntuación (0-10)
+    val voteAverage: Double?,    // Puntuación (0-10)
+    
+    @SerializedName("genre_ids")
+    val genreIds: List<Int>? = null // IDs de géneros
 ) {
     /**
      * Valida que los campos críticos no sean nulos.
@@ -53,7 +57,8 @@ data class MovieApiModel(
             posterUrl = MediaConstants.formatImageUrl(posterPath),
             backdropUrl = MediaConstants.formatImageUrl(backdropPath, MediaConstants.DEFAULT_BACKDROP_SIZE),
             voteAverage = voteAverage ?: 0.0,
-            type = MediaType.MOVIE
+            type = MediaType.MOVIE,
+            genres = genreIds?.mapNotNull { id -> GenreItem(id, genreIdToName(id)) }
         )
     }
 }
@@ -68,3 +73,27 @@ data class MovieApiResponse(
 
 // Función de extensión para compatibilidad
 fun MovieApiModel.toDomain(): MediaItem = this.toDomain()
+
+// Función auxiliar para mapear IDs a nombres de género (ajusta según tus géneros soportados)
+fun genreIdToName(id: Int): String = when (id) {
+    28 -> "Acción"
+    12 -> "Aventura"
+    16 -> "Animación"
+    35 -> "Comedia"
+    80 -> "Crimen"
+    99 -> "Documental"
+    18 -> "Drama"
+    10751 -> "Familiar"
+    14 -> "Fantasía"
+    36 -> "Historia"
+    27 -> "Terror"
+    10402 -> "Música"
+    9648 -> "Misterio"
+    10749 -> "Romance"
+    878 -> "Ciencia ficción"
+    10770 -> "Película de TV"
+    53 -> "Suspense"
+    10752 -> "Bélica"
+    37 -> "Western"
+    else -> "Otro"
+}
