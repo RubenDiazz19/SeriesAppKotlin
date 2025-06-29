@@ -94,8 +94,9 @@ object AppModule {
     fun provideRoomMediaRepository(
         mediaItemDao: MediaItemDao, 
         favoriteDao: FavoriteDao,
-        mediaDetailDao: MediaDetailDao
-    ): RoomMediaRepository = RoomMediaRepository(mediaItemDao, favoriteDao, mediaDetailDao)
+        mediaDetailDao: MediaDetailDao,
+        userRepository: UserRepository
+    ): RoomMediaRepository = RoomMediaRepository(mediaItemDao, favoriteDao, mediaDetailDao, userRepository)
 
     @Provides @Singleton
     fun provideSmartMediaRepository(
@@ -115,9 +116,10 @@ object AppModule {
     @Provides @Singleton
     fun provideFavoriteRepository(
         favoriteDao: FavoriteDao,
-        mediaItemDao: MediaItemDao
+        mediaItemDao: MediaItemDao,
+        userRepository: UserRepository
     ): FavoriteRepository =
-        FavoriteRepository(favoriteDao, mediaItemDao)
+        FavoriteRepository(favoriteDao, mediaItemDao, userRepository)
 
     @Provides
     @Singleton

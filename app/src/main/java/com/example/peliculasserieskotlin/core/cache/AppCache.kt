@@ -52,17 +52,17 @@ class AppCache @Inject constructor(
     }
 
     // Favoritos
-    suspend fun addToFavorites(mediaItem: MediaItem) {
+    suspend fun addToFavorites(userId: Int, mediaItem: MediaItem) {
         database.mediaItemDao().insertMediaItem(mediaItem.toEntity())
-        database.favoriteDao().insertFavorite(FavoriteEntity(mediaItem.id, mediaItem.type.name))
+        database.favoriteDao().insertFavorite(FavoriteEntity(userId, mediaItem.id, mediaItem.type.name))
     }
 
-    suspend fun removeFromFavorites(mediaId: Int, mediaType: MediaType) {
-        database.favoriteDao().deleteFavorite(FavoriteEntity(mediaId, mediaType.name))
+    suspend fun removeFromFavorites(userId: Int, mediaId: Int, mediaType: MediaType) {
+        database.favoriteDao().deleteFavorite(FavoriteEntity(userId, mediaId, mediaType.name))
     }
 
-    fun getFavorites(): Flow<List<MediaItem>> {
-        return database.favoriteDao().getAllFavorites().map { favs ->
+    fun getFavorites(userId: Int): Flow<List<MediaItem>> {
+        return database.favoriteDao().getAllFavoritesByUser(userId).map { favs ->
             val ids = favs.map { it.mediaId }
             if (ids.isEmpty()) return@map emptyList()
             database.mediaItemDao().getMediaItemsByIds(ids).map { it.toDomain() }

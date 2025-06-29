@@ -34,8 +34,7 @@ fun HomeHeader(
     sortBy: HomeViewModel.SortType,
     onSortTypeSelected: (HomeViewModel.SortType) -> Unit,
     inlineSearchActive: Boolean,
-    showFavoriteSort: Boolean = true,
-    isGuest: Boolean = false
+    showFavoriteSort: Boolean = true
 ) {
     Column(
         modifier = Modifier
@@ -136,8 +135,8 @@ fun HomeHeader(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Solo mostrar el botón de favoritos si no es invitado y showFavoriteSort es true
-            if (showFavoriteSort && !isGuest) {
+            // Solo mostrar el botón de favoritos si showFavoriteSort es true
+            if (showFavoriteSort) {
                 SortButton(
                     isSelected = sortBy == HomeViewModel.SortType.FAVORITE,
                     icon = Icons.Default.Favorite,

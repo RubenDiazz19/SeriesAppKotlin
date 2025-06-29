@@ -32,14 +32,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import com.example.peliculasserieskotlin.core.util.NetworkUtils
 import android.util.Log
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.peliculasserieskotlin.features.auth.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    onNavigateToDetail: (Int, MediaType) -> Unit,
-    isGuest: Boolean = false
+    onNavigateToDetail: (Int, MediaType) -> Unit
 ) {
+    val authViewModel: AuthViewModel = hiltViewModel()
+    val currentUser by authViewModel.currentUser.collectAsState()
+    val isGuest = currentUser == null
+    
     Log.d("DEBUG", "[HomeScreen] isGuest: $isGuest")
     val uiState by viewModel.uiState.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
@@ -157,8 +162,7 @@ fun HomeScreen(
                                     sortBy = sortBy,
                                     onSortTypeSelected = viewModel::setSortType,
                                     inlineSearchActive = inlineSearchActive,
-                                    showFavoriteSort = !isGuest,
-                                    isGuest = isGuest
+                                    showFavoriteSort = !isGuest
                                 )
                             }
                         }
@@ -177,8 +181,7 @@ fun HomeScreen(
                                     FavoriteContent(
                                         items = favoriteItems.filter { it.type == targetMediaType },
                                         listState = listState,
-                                        viewModel = viewModel,
-                                        isGuest = isGuest
+                                        viewModel = viewModel
                                     )
                                 }
                                 isGuest && sortBy == HomeViewModel.SortType.FAVORITE -> {
@@ -187,8 +190,7 @@ fun HomeScreen(
                                         pagedItems = pagedItems,
                                         targetMediaType = targetMediaType,
                                         listState = listState,
-                                        viewModel = viewModel,
-                                        isGuest = isGuest
+                                        viewModel = viewModel
                                     )
                                 }
                                 !isOnline -> {
@@ -225,8 +227,7 @@ fun HomeScreen(
                                         pagedItems = pagedItems,
                                         targetMediaType = targetMediaType,
                                         listState = listState,
-                                        viewModel = viewModel,
-                                        isGuest = isGuest
+                                        viewModel = viewModel
                                     )
                                 }
                             }
@@ -378,8 +379,7 @@ private fun SearchingState() {
 private fun FavoriteContent(
     items: List<com.example.peliculasserieskotlin.core.model.MediaItem>,
     listState: LazyGridState,
-    viewModel: HomeViewModel,
-    isGuest: Boolean
+    viewModel: HomeViewModel
 ) {
     if (items.isEmpty()) {
         EmptyFavorites()
@@ -404,9 +404,9 @@ private fun FavoriteContent(
                 MediaCard(
                     mediaItem = item,
                     isFavorite = isFavorite,
-                    onFavoriteClick = if (!isGuest) { { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) } } else null,
+                    onFavoriteClick = { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) },
                     onItemClick = { viewModel.onMediaItemSelected(it) },
-                    showFavoriteIcon = !isGuest
+                    showFavoriteIcon = true
                 )
             }
         }
@@ -457,10 +457,9 @@ private fun MainContent(
     pagedItems: androidx.paging.compose.LazyPagingItems<com.example.peliculasserieskotlin.core.model.MediaItem>,
     targetMediaType: MediaType,
     listState: LazyGridState,
-    viewModel: HomeViewModel,
-    isGuest: Boolean
+    viewModel: HomeViewModel
 ) {
-    Log.d("DEBUG", "[MainContent] isGuest: $isGuest")
+    Log.d("DEBUG", "[MainContent] isGuest: false")
     LazyVerticalGrid(
         state = listState,
         columns = GridCells.Adaptive(160.dp),
@@ -476,13 +475,13 @@ private fun MainContent(
             if (item != null && item.type == targetMediaType) {
                 val isFavorite by viewModel.isFavorite(item.id, item.type)
                     .collectAsState(initial = false)
-                Log.d("DEBUG", "[MediaCard] isGuest: $isGuest, item: ${item.title}")
+                Log.d("DEBUG", "[MediaCard] isGuest: false, item: ${item.title}")
                 MediaCard(
                     mediaItem = item,
                     isFavorite = isFavorite,
-                    onFavoriteClick = if (!isGuest) { { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) } } else null,
+                    onFavoriteClick = { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) },
                     onItemClick = { viewModel.onMediaItemSelected(it) },
-                    showFavoriteIcon = !isGuest
+                    showFavoriteIcon = true
                 )
             }
         }

@@ -9,6 +9,7 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.example.peliculasserieskotlin.features.shared.repository.FavoriteRepository
 import com.example.peliculasserieskotlin.features.shared.repository.MediaRepository
+import com.example.peliculasserieskotlin.features.shared.repository.UserRepository
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.core.model.MediaType
 import com.example.peliculasserieskotlin.core.util.NetworkUtils
@@ -25,6 +26,7 @@ import android.util.Log
 class HomeViewModel @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val favoriteRepository: FavoriteRepository,
+    private val userRepository: UserRepository,
     private val networkUtils: NetworkUtils
 ) : ViewModel() {
 
@@ -52,25 +54,18 @@ class HomeViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow<String?>(null)
 
-    // Variable para controlar si el usuario es invitado
-    private var _isGuest = false
-    fun setGuestMode(isGuest: Boolean) {
-        _isGuest = isGuest
-        // Si es invitado y está en modo favoritos, cambiar a rating
-        if (isGuest && _sortBy.value == SortType.FAVORITE) {
-            _sortBy.value = SortType.RATING
-        }
-    }
-
     val pagedMediaItems: StateFlow<Flow<PagingData<MediaItem>>> = combine(
         _selectedCategory,
         _sortBy,
-        _searchQuery
-    ) { category, sort, query ->
+        _searchQuery,
+        userRepository.currentUser
+    ) { category, sort, query, currentUser ->
         val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
-        if (sort == SortType.FAVORITE && !_isGuest) {
+        val isGuest = currentUser == null
+        
+        if (sort == SortType.FAVORITE && !isGuest) {
             flowOf(PagingData.empty())
-        } else if (sort == SortType.FAVORITE && _isGuest) {
+        } else if (sort == SortType.FAVORITE && isGuest) {
             // Si es invitado y está en modo favoritos, cambiar a rating automáticamente
             _sortBy.value = SortType.RATING
             try {
@@ -97,9 +92,11 @@ class HomeViewModel @Inject constructor(
 
     val favoriteMediaItems: StateFlow<List<MediaItem>> = combine(
         _selectedCategory,
-        _sortBy
-    ) { category, sort ->
-        if (sort == SortType.FAVORITE && !_isGuest) {
+        _sortBy,
+        userRepository.currentUser
+    ) { category, sort, currentUser ->
+        val isGuest = currentUser == null
+        if (sort == SortType.FAVORITE && !isGuest) {
             val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
             try {
                 favoriteRepository.getFavoriteMedia(mediaType)
@@ -165,7 +162,7 @@ class HomeViewModel @Inject constructor(
 
     fun toggleFavorite(item: MediaItem, isFav: Boolean) = viewModelScope.launch {
         // No permitir favoritos si es invitado
-        if (_isGuest) return@launch
+        if (!userRepository.isUserLoggedIn()) return@launch
         
         try {
             if (isFav) favoriteRepository.addFavorite(item)
@@ -176,7 +173,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun isFavorite(id: Int, type: MediaType): Flow<Boolean> =
-        if (_isGuest) flowOf(false) else favoriteRepository.isFavorite(id, type)
+        if (!userRepository.isUserLoggedIn()) flowOf(false) else favoriteRepository.isFavorite(id, type)
 
     fun showInlineSearch() {
         _inlineSearchActive.value = true
@@ -216,7 +213,7 @@ class HomeViewModel @Inject constructor(
     fun setSortType(type: SortType) {
         if (_sortBy.value == type) return
         // No permitir cambiar a favoritos si es invitado
-        if (type == SortType.FAVORITE && _isGuest) return
+        if (type == SortType.FAVORITE && !userRepository.isUserLoggedIn()) return
         _sortBy.value = type
     }
 

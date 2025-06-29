@@ -89,17 +89,13 @@ fun AppNavigator(
         is com.example.peliculasserieskotlin.features.auth.AuthState.RegisterSuccess,
         is com.example.peliculasserieskotlin.features.auth.AuthState.Guest -> {
             // Solo aquí se permite cargar HomeScreen y los datos
-            LaunchedEffect(isGuest) {
-                homeViewModel.setGuestMode(isGuest)
-            }
             NavHost(navController = navController, startDestination = "home") {
                 composable("home") {
                     HomeScreen(
                         viewModel = homeViewModel,
                         onNavigateToDetail = { id, type ->
                             navController.navigate("detail/${type.name.lowercase()}/$id")
-                        },
-                        isGuest = isGuest
+                        }
                     )
                 }
                 composable(
@@ -120,8 +116,7 @@ fun AppNavigator(
                             mediaId = id,
                             type = type,
                             viewModel = detailViewModel,
-                            onBack = { navController.popBackStack() },
-                            isGuest = isGuest
+                            onBack = { navController.popBackStack() }
                         )
                     }
                 }

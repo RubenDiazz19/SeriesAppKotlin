@@ -17,6 +17,9 @@ class AuthViewModel @Inject constructor(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState
 
+    // Exponer el usuario actual
+    val currentUser = userRepository.currentUser
+
     fun register(username: String, password: String) {
         viewModelScope.launch {
             val success = userRepository.registerUser(username, password)
@@ -32,7 +35,13 @@ class AuthViewModel @Inject constructor(
     }
 
     fun enterAsGuest() {
+        userRepository.enterAsGuest()
         _authState.value = AuthState.Guest
+    }
+
+    fun logout() {
+        userRepository.logout()
+        _authState.value = AuthState.Idle
     }
 }
 
