@@ -34,7 +34,8 @@ fun HomeHeader(
     sortBy: HomeViewModel.SortType,
     onSortTypeSelected: (HomeViewModel.SortType) -> Unit,
     inlineSearchActive: Boolean,
-    showFavoriteSort: Boolean = true
+    showFavoriteSort: Boolean = true,
+    actionsSlot: (@Composable RowScope.() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
@@ -109,41 +110,37 @@ fun HomeHeader(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.End,
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Spacer para empujar los botones hacia la derecha
-            Spacer(modifier = Modifier.weight(1f))
-
-            SortButton(
-                isSelected = sortBy == HomeViewModel.SortType.RATING,
-                icon = Icons.Default.Star,
-                contentDescription = "Ordenar por puntuación",
-                selectedColor = Color(0xFFF4C10F),
-                onClick = { onSortTypeSelected(HomeViewModel.SortType.RATING) }
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            SortButton(
-                isSelected = sortBy == HomeViewModel.SortType.ALPHABETIC,
-                icon = Icons.Default.Edit,
-                contentDescription = "Ordenar alfabéticamente",
-                selectedColor = MaterialTheme.colorScheme.primary,
-                onClick = { onSortTypeSelected(HomeViewModel.SortType.ALPHABETIC) }
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Solo mostrar el botón de favoritos si showFavoriteSort es true
-            if (showFavoriteSort) {
+            actionsSlot?.invoke(this)
+            Spacer(modifier = Modifier.width(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 SortButton(
-                    isSelected = sortBy == HomeViewModel.SortType.FAVORITE,
-                    icon = Icons.Default.Favorite,
-                    contentDescription = "Ver favoritos",
-                    selectedColor = Color(0xFFE91E63),
-                    onClick = { onSortTypeSelected(HomeViewModel.SortType.FAVORITE) }
+                    isSelected = sortBy == HomeViewModel.SortType.RATING,
+                    icon = Icons.Default.Star,
+                    contentDescription = "Ordenar por puntuación",
+                    selectedColor = Color(0xFFF4C10F),
+                    onClick = { onSortTypeSelected(HomeViewModel.SortType.RATING) }
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+                SortButton(
+                    isSelected = sortBy == HomeViewModel.SortType.ALPHABETIC,
+                    icon = Icons.Default.Edit,
+                    contentDescription = "Ordenar alfabéticamente",
+                    selectedColor = MaterialTheme.colorScheme.primary,
+                    onClick = { onSortTypeSelected(HomeViewModel.SortType.ALPHABETIC) }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                if (showFavoriteSort) {
+                    SortButton(
+                        isSelected = sortBy == HomeViewModel.SortType.FAVORITE,
+                        icon = Icons.Default.Favorite,
+                        contentDescription = "Ver favoritos",
+                        selectedColor = Color(0xFFE91E63),
+                        onClick = { onSortTypeSelected(HomeViewModel.SortType.FAVORITE) }
+                    )
+                }
             }
         }
     }

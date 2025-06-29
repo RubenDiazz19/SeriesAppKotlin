@@ -121,7 +121,8 @@ class ApiMediaRepository @Inject constructor(
     override fun getPagedMedia(
         mediaType: MediaType,
         sortType: HomeViewModel.SortType,
-        searchQuery: String?
+        searchQuery: String?,
+        genreIds: List<Int>?
     ): Flow<PagingData<MediaItem>> {
         return Pager(
             config = PagingConfig(
@@ -137,6 +138,7 @@ class ApiMediaRepository @Inject constructor(
                     mediaType = mediaType,
                     sortType = sortType,
                     searchQuery = searchQuery,
+                    genreIds = genreIds,
                     roomRepository = roomRepository
                 )
             }

@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.example.peliculasserieskotlin.features.home.HomeUiState
 import android.util.Log
+import com.example.peliculasserieskotlin.core.model.GenreItem
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -54,22 +55,26 @@ class HomeViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow<String?>(null)
 
+    private val _selectedGenres = MutableStateFlow<List<GenreItem>>(emptyList())
+    val selectedGenres: StateFlow<List<GenreItem>> = _selectedGenres.asStateFlow()
+
     val pagedMediaItems: StateFlow<Flow<PagingData<MediaItem>>> = combine(
         _selectedCategory,
         _sortBy,
         _searchQuery,
-        userRepository.currentUser
-    ) { category, sort, query, currentUser ->
+        userRepository.currentUser,
+        _selectedGenres
+    ) { category, sort, query, currentUser, selectedGenres ->
         val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
         val isGuest = currentUser == null
+        val genreIds = selectedGenres.map { it.id }.filter { it != -1 }
         
         if (sort == SortType.FAVORITE && !isGuest) {
             flowOf(PagingData.empty())
         } else if (sort == SortType.FAVORITE && isGuest) {
-            // Si es invitado y está en modo favoritos, cambiar a rating automáticamente
             _sortBy.value = SortType.RATING
             try {
-                mediaRepository.getPagedMedia(mediaType, SortType.RATING, query)
+                mediaRepository.getPagedMedia(mediaType, SortType.RATING, query, genreIds)
                     .cachedIn(viewModelScope)
             } catch (e: Exception) {
                 updateError(e.localizedMessage ?: "Error al cargar los datos")
@@ -77,7 +82,7 @@ class HomeViewModel @Inject constructor(
             }
         } else {
             try {
-                mediaRepository.getPagedMedia(mediaType, sort, query)
+                mediaRepository.getPagedMedia(mediaType, sort, query, genreIds)
                     .cachedIn(viewModelScope)
             } catch (e: Exception) {
                 updateError(e.localizedMessage ?: "Error al cargar los datos")
@@ -114,12 +119,26 @@ class HomeViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    val cachedMediaItems: StateFlow<List<MediaItem>> = _selectedCategory
-        .map { category ->
-            val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
-            mediaRepository.getMediaFromLocalDb(mediaType)
+    val cachedMediaItems: StateFlow<List<MediaItem>> = combine(
+        _selectedCategory,
+        _selectedGenres
+    ) { category, selectedGenres ->
+        val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
+        Pair(mediaType, selectedGenres)
+    }
+        .flatMapLatest { (mediaType, selectedGenres) ->
+            mediaRepository.getMediaFromLocalDb(mediaType).map { mediaList ->
+                if (selectedGenres.isEmpty()) {
+                    mediaList
+                } else {
+                    // Filtrar por coincidencia de al menos un género
+                    mediaList.filter { item ->
+                        val itemGenreIds = item.genres?.map { it.id } ?: emptyList()
+                        selectedGenres.any { it.id in itemGenreIds }
+                    }
+                }
+            }
         }
-        .flatMapLatest { it }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -261,5 +280,18 @@ class HomeViewModel @Inject constructor(
 
     fun clearError() {
         updateError(null)
+    }
+
+    fun toggleGenreSelection(genre: GenreItem) {
+        if (genre.id == -1) {
+            // Si es el chip 'Todos', limpiar selección
+            _selectedGenres.value = emptyList()
+        } else {
+            _selectedGenres.value = if (_selectedGenres.value.contains(genre)) {
+                _selectedGenres.value - genre
+            } else {
+                _selectedGenres.value + genre
+            }
+        }
     }
 }

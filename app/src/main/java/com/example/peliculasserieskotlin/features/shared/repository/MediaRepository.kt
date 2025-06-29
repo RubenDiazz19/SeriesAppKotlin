@@ -88,7 +88,8 @@ interface MediaRepository {
     fun getPagedMedia(
         mediaType: MediaType, // Nombre de parámetro corregido y tipo especificado
         sortType: HomeViewModel.SortType, // Nombre de parámetro corregido y tipo especificado
-        searchQuery: String? // Nombre de parámetro corregido
+        searchQuery: String?, // Nombre de parámetro corregido
+        genreIds: List<Int>? // Nuevo parámetro para filtrar por géneros
     ): Flow<PagingData<MediaItem>> // Tipo de retorno corregido
 
     /**

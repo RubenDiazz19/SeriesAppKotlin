@@ -19,6 +19,7 @@ class MediaPagingSource(
     private val mediaType: MediaType,
     private val sortType: HomeViewModel.SortType,
     private val searchQuery: String? = null,
+    private val genreIds: List<Int>? = null,
     private val roomRepository: RoomMediaRepository
 ) : PagingSource<Int, MediaItem>() {
 
@@ -78,15 +79,25 @@ class MediaPagingSource(
                 }
             }
 
+            // Filtrar por géneros si genreIds no está vacío
+            val filteredResponse = if (!genreIds.isNullOrEmpty()) {
+                response.filter { item ->
+                    val itemGenreIds = item.genres?.map { it.id } ?: emptyList()
+                    genreIds.any { it in itemGenreIds }
+                }
+            } else {
+                response
+            }
+
             // Guardar los elementos en caché
-            if (response.isNotEmpty()) {
-                roomRepository.cacheMediaItems(response)
+            if (filteredResponse.isNotEmpty()) {
+                roomRepository.cacheMediaItems(filteredResponse)
             }
 
             LoadResult.Page(
-                data = response,
+                data = filteredResponse,
                 prevKey = if (page == 1) null else page - 1,
-                nextKey = if (response.isEmpty()) null else page + 1
+                nextKey = if (filteredResponse.isEmpty()) null else page + 1
             )
         } catch (e: Exception) {
             LoadResult.Error(e)

@@ -37,6 +37,18 @@ import com.example.peliculasserieskotlin.features.auth.AuthViewModel
 import com.example.peliculasserieskotlin.features.shared.components.LoadingState
 import com.example.peliculasserieskotlin.features.shared.components.EmptyState
 import com.example.peliculasserieskotlin.features.shared.components.ErrorState
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.peliculasserieskotlin.core.model.GenreItem
+import com.example.peliculasserieskotlin.core.model.SUPPORTED_GENRES
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +59,7 @@ fun HomeScreen(
     val authViewModel: AuthViewModel = hiltViewModel()
     val currentUser by authViewModel.currentUser.collectAsState()
     val isGuest = currentUser == null
-    
+
     Log.d("DEBUG", "[HomeScreen] isGuest: $isGuest")
     val uiState by viewModel.uiState.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
@@ -55,6 +67,7 @@ fun HomeScreen(
     val inlineSearchActive by viewModel.inlineSearchActive.collectAsState()
     val showSearchBarForced by viewModel.showSearchBarForced.collectAsState()
     val searchText = viewModel.searchText
+    val selectedGenres by viewModel.selectedGenres.collectAsState()
 
     val listState = rememberLazyGridState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -156,16 +169,42 @@ fun HomeScreen(
                                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                                 tonalElevation = if (showHeader) 0.dp else 2.dp
                             ) {
-                                Log.d("DEBUG", "[HomeHeader] isGuest: $isGuest")
-                                HomeHeader(
-                                    selectedCategory = selectedCategory,
-                                    onCategorySelected = viewModel::updateCategory,
-                                    searchText = searchText,
-                                    onSearchQueryChanged = viewModel::onSearchQueryChanged,
-                                    sortBy = sortBy,
-                                    onSortTypeSelected = viewModel::setSortType,
-                                    inlineSearchActive = inlineSearchActive,
-                                    showFavoriteSort = !isGuest
+                                Column {
+                                    HomeHeader(
+                                        selectedCategory = selectedCategory,
+                                        onCategorySelected = viewModel::updateCategory,
+                                        searchText = searchText,
+                                        onSearchQueryChanged = viewModel::onSearchQueryChanged,
+                                        sortBy = sortBy,
+                                        onSortTypeSelected = viewModel::setSortType,
+                                        inlineSearchActive = inlineSearchActive,
+                                        showFavoriteSort = !isGuest,
+                                        actionsSlot = {
+                                            GenreSelector(
+                                                selectedGenres = selectedGenres,
+                                                onGenreClick = viewModel::toggleGenreSelection,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Selector de géneros cuando el header no es visible
+                        AnimatedVisibility(
+                            visible = !showHeader && searchText.isBlank(),
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                                tonalElevation = 1.dp
+                            ) {
+                                GenreSelector(
+                                    selectedGenres = selectedGenres,
+                                    onGenreClick = viewModel::toggleGenreSelection
                                 )
                             }
                         }
@@ -465,5 +504,87 @@ private fun MainContent(
         }
 
         else -> {}
+    }
+}
+
+@Composable
+fun GenreSelector(
+    selectedGenres: List<GenreItem>,
+    onGenreClick: (GenreItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val listState = rememberLazyListState()
+    LazyRow(
+        state = listState,
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp)
+    ) {
+        // Opción "Todos" al inicio
+        item {
+            GenreChip(
+                text = "Todos",
+                isSelected = selectedGenres.isEmpty(),
+                onClick = { /* Si se pulsa 'Todos', limpiar selección */ onGenreClick(GenreItem(-1, "Todos")) }
+            )
+        }
+        // Lista de géneros
+        items(SUPPORTED_GENRES) { genre ->
+            GenreChip(
+                text = genre.name,
+                isSelected = selectedGenres.any { it.id == genre.id },
+                onClick = { onGenreClick(genre) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun GenreChip(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val animatedColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        animationSpec = tween(200),
+        label = "chip_color"
+    )
+    val animatedTextColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        animationSpec = tween(200),
+        label = "text_color"
+    )
+    Surface(
+        onClick = onClick,
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .heightIn(min = 36.dp),
+        color = animatedColor,
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+                ),
+                color = animatedTextColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }

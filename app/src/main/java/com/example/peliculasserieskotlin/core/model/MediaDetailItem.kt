@@ -58,7 +58,6 @@ sealed class MediaDetailItem(
 }
 
 // Modelos auxiliares (pueden estar en archivos separados si ya existen)
-data class GenreItem(val id: Int, val name: String)
 data class ProductionCompanyItem(val name: String, val logoPath: String?, val originCountry: String)
 data class ProductionCountryItem(val iso_3166_1: String, val name: String)
 data class SpokenLanguageItem(val englishName: String, val iso_639_1: String, val name: String)
