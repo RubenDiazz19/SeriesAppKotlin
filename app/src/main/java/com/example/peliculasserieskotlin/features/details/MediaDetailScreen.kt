@@ -38,6 +38,8 @@ import com.example.peliculasserieskotlin.core.model.GenreItem
 import com.example.peliculasserieskotlin.core.model.MediaType
 import com.example.peliculasserieskotlin.core.model.MediaItem
 import com.example.peliculasserieskotlin.features.favorites.FavoriteViewModel
+import com.example.peliculasserieskotlin.features.shared.components.LoadingState
+import com.example.peliculasserieskotlin.features.shared.components.ErrorState
 import kotlin.getValue
 
 /**
@@ -67,41 +69,10 @@ fun MediaDetailScreen(
     ) {
         when {
             uiState?.error != null -> {
-                // Mostrar mensaje de error
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = uiState!!.error ?: "Error desconocido",
-                        color = Color.Red,
-                        style = MaterialTheme.typography.titleLarge,
-                        textAlign = TextAlign.Center
-                    )
-                }
+                ErrorState(message = uiState!!.error ?: "Error desconocido")
             }
             uiState == null -> {
-                // Loader centrado con estilo elegante
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(48.dp),
-                            strokeWidth = 4.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Cargando contenido...",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-                    }
-                }
+                LoadingState()
             }
             else -> {
                 MediaDetailContent(

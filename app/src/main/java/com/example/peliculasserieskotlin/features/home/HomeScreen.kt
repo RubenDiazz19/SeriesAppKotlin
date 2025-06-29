@@ -34,6 +34,9 @@ import com.example.peliculasserieskotlin.core.util.NetworkUtils
 import android.util.Log
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.peliculasserieskotlin.features.auth.AuthViewModel
+import com.example.peliculasserieskotlin.features.shared.components.LoadingState
+import com.example.peliculasserieskotlin.features.shared.components.EmptyState
+import com.example.peliculasserieskotlin.features.shared.components.ErrorState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,7 +134,7 @@ fun HomeScreen(
         ) {
             when {
                 uiState.error != null -> {
-                    ErrorState(error = uiState.error ?: "Error desconocido")
+                    ErrorState(message = uiState.error ?: "Error desconocido")
                 }
                 uiState.isLoading -> {
                     LoadingState()
@@ -296,60 +299,12 @@ fun HomeScreen(
 
 @Composable
 private fun ErrorState(error: String) {
-    Box(
-        Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            modifier = Modifier.padding(32.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
-            ),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "⚠️",
-                    style = MaterialTheme.typography.displaySmall
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-        }
-    }
+    // Eliminado, usar el componente reutilizable
 }
 
 @Composable
 private fun LoadingState() {
-    Box(
-        Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(48.dp),
-                color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 3.dp
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Cargando contenido...",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
+    // Eliminado, usar el componente reutilizable
 }
 
 @Composable
@@ -415,41 +370,11 @@ private fun FavoriteContent(
 
 @Composable
 private fun EmptyFavorites() {
-    Box(
-        Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            modifier = Modifier.padding(32.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-            ),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "💙",
-                    style = MaterialTheme.typography.displayMedium
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Sin favoritos",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Marca contenido como favorito para verlo aquí",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-        }
-    }
+    EmptyState(
+        icon = "💙",
+        title = "Sin favoritos",
+        message = "Marca contenido como favorito para verlo aquí"
+    )
 }
 
 @Composable

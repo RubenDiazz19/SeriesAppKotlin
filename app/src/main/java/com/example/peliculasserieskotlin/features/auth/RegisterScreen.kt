@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.peliculasserieskotlin.features.shared.components.ErrorCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -164,21 +165,7 @@ fun RegisterScreen(
                     // Error de contraseña
                     if (passwordError != null) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color.Red.copy(alpha = 0.1f)
-                            )
-                        ) {
-                            Text(
-                                text = passwordError!!,
-                                color = Color.Red.copy(alpha = 0.8f),
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(12.dp),
-                                textAlign = TextAlign.Center
-                            )
-                        }
+                        ErrorCard(message = passwordError!!, fontSize = 12, padding = 12)
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -228,21 +215,7 @@ fun RegisterScreen(
             // Mensaje de error general
             if (authState is AuthState.Error) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.Red.copy(alpha = 0.1f)
-                    )
-                ) {
-                    Text(
-                        text = (authState as AuthState.Error).message,
-                        color = Color.Red.copy(alpha = 0.8f),
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
+                ErrorCard(message = (authState as AuthState.Error).message)
             }
         }
     }

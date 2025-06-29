@@ -25,7 +25,8 @@ data class MediaItemEntity(
     val backdropUrl: String?,  // URL de imagen de fondo
     val voteAverage: Double,   // Valoración media
     val mediaType: String,     // Tipo: "MOVIE" o "SERIES"
-    val genres: String? = null // Géneros en formato JSON
+    val genres: String? = null, // Géneros en formato JSON
+    val timestamp: Long = System.currentTimeMillis() // Marca de tiempo para caché
 )
 
 /**
@@ -45,7 +46,8 @@ fun MediaItemEntity.toDomain(): MediaItem {
         backdropUrl = backdropUrl,
         voteAverage = voteAverage,
         type = MediaType.valueOf(mediaType),
-        genres = genresList
+        genres = genresList,
+        timestamp = timestamp
     )
 }
 
@@ -62,6 +64,7 @@ fun MediaItem.toEntity(): MediaItemEntity {
         backdropUrl = backdropUrl,
         voteAverage = voteAverage,
         mediaType = type.name,
-        genres = genres?.let { gson.toJson(it) }
+        genres = genres?.let { gson.toJson(it) },
+        timestamp = timestamp ?: System.currentTimeMillis()
     )
 }

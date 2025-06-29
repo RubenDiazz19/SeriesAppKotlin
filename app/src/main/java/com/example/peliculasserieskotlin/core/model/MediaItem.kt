@@ -18,5 +18,6 @@ open class MediaItem(
     open val backdropUrl: String?,  // URL de imagen de fondo
     open val voteAverage: Double,   // Puntuación (0-10)
     open val type: MediaType,       // Tipo (MOVIE o SERIES)
-    open val genres: List<GenreItem>? = null // Lista de géneros opcional
+    open val genres: List<GenreItem>? = null, // Lista de géneros opcional
+    open val timestamp: Long? = null // Marca de tiempo opcional para caché
 )

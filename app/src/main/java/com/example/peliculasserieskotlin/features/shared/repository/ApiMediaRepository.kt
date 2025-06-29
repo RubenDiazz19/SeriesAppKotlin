@@ -95,27 +95,21 @@ class ApiMediaRepository @Inject constructor(
     }
 
     /**
-     * No implementado: Este repositorio no maneja operaciones de base de datos.
-     * @throws UnsupportedOperationException Siempre, ya que no es compatible.
+     * Delega la inserción al repositorio local.
      */
     override suspend fun insertMediaToLocalDb(mediaItems: List<MediaItem>) {
-        // ApiMediaRepository no se encarga de la base de datos local.
-        // Esta operación debería ser manejada por RoomMediaRepository.
-        throw UnsupportedOperationException("ApiMediaRepository no puede insertar en la base de datos local.")
+        roomRepository.cacheMediaItems(mediaItems)
     }
 
     /**
-     * No implementado: Este repositorio no maneja operaciones de base de datos.
-     * @throws UnsupportedOperationException Siempre, ya que no es compatible.
+     * Delega la lectura al repositorio local.
      */
     override fun getMediaFromLocalDb(type: MediaType): Flow<List<MediaItem>> {
-        // ApiMediaRepository no se encarga de la base de datos local.
-        throw UnsupportedOperationException("ApiMediaRepository no puede leer de la base de datos local.")
+        return roomRepository.getCachedMediaItems(type)
     }
 
     /**
-     * No implementado: Este repositorio no maneja operaciones de base de datos.
-     * @throws UnsupportedOperationException Siempre, ya que no es compatible.
+     * Delega la lectura al repositorio local.
      */
     override fun getAllMediaFromLocalDb(): Flow<List<MediaItem>> {
         return roomRepository.getAllCachedMedia()

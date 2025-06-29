@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.peliculasserieskotlin.features.shared.components.ErrorCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -186,21 +187,7 @@ fun LoginScreen(
             // Mensaje de error
             if (authState is AuthState.Error) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.Red.copy(alpha = 0.1f)
-                    )
-                ) {
-                    Text(
-                        text = (authState as AuthState.Error).message,
-                        color = Color.Red.copy(alpha = 0.8f),
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
+                ErrorCard(message = (authState as AuthState.Error).message)
             }
         }
     }

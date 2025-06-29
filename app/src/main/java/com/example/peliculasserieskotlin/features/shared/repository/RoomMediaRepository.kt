@@ -13,6 +13,7 @@ import com.example.peliculasserieskotlin.core.model.MediaDetailItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class RoomMediaRepository @Inject constructor(
@@ -70,8 +71,16 @@ class RoomMediaRepository @Inject constructor(
     }
 
     suspend fun clearExpiredCache() {
-        // Implementar lógica para limpiar caché expirado si es necesario
-        // Por ahora, no hacemos nada
+        val now = System.currentTimeMillis()
+        val expiration = 24 * 60 * 60 * 1000 // 24 horas
+
+        // Limpiar media_items expirados
+        val expiredItems = mediaItemDao.getAllMediaItemsList().filter { now - it.timestamp > expiration }
+        expiredItems.forEach { mediaItemDao.deleteByIdAndType(it.id, it.mediaType) }
+
+        // Limpiar media_details expirados
+        val expiredDetails = mediaDetailDao.getAllDetailsList().filter { now - it.lastUpdated > expiration }
+        expiredDetails.forEach { mediaDetailDao.deleteByIdAndType(it.id, it.mediaType) }
     }
 
     suspend fun hasDetailCached(id: Int, type: MediaType): Boolean {
@@ -80,47 +89,28 @@ class RoomMediaRepository @Inject constructor(
 
     // -------- Favorites --------
 
-    suspend fun addFavorite(item: MediaItem) {
-        val currentUserId = userRepository.getCurrentUserId()
-        if (currentUserId != null) {
-            // Asegúrate de que el MediaItem esté en la base de datos antes de marcarlo como favorito
-            mediaItemDao.insertMediaItem(item.toEntity())
-            favoriteDao.insertFavorite(FavoriteEntity(currentUserId, item.id, item.type.name))
-        }
-    }
+    // (Eliminados métodos de favoritos, usar FavoriteRepository)
 
-    suspend fun removeFavorite(id: Int, type: MediaType) {
-        val currentUserId = userRepository.getCurrentUserId()
-        if (currentUserId != null) {
-            favoriteDao.deleteFavorite(FavoriteEntity(currentUserId, id, type.name))
-        }
-    }
-
-    fun getAllFavorites(type: MediaType): Flow<List<MediaItem>> {
-        val currentUserId = userRepository.getCurrentUserId()
-        return if (currentUserId != null) {
-            favoriteDao.getFavoritesByTypeAndUser(currentUserId, type.name).map { favs ->
-                val ids = favs.map { it.mediaId }
-                if (ids.isEmpty()) return@map emptyList()
-                // Consulta optimizada usando IN
-                mediaItemDao.getMediaItemsByIds(ids)
-                    .map { it.toDomain() }
-                    .filter { it.type == type }
-                    .sortedBy { ids.indexOf(it.id) }
+    /**
+     * Borra la caché de media_items y media_details excepto los favoritos.
+     */
+    suspend fun clearCacheExceptFavorites() {
+        // Obtener favoritos (legacy: userId = -1)
+        val favorites = favoriteDao.getAllFavorites().first()
+        val favoriteSet = favorites.map { it.mediaId to it.mediaType }.toSet()
+        // Limpiar media_items
+        val allItems = mediaItemDao.getAllMediaItemsList()
+        for (item in allItems) {
+            if ((item.id to item.mediaType) !in favoriteSet) {
+                mediaItemDao.deleteByIdAndType(item.id, item.mediaType)
             }
-        } else {
-            // Para invitados, devolver lista vacía
-            flowOf(emptyList())
         }
-    }
-
-    fun isFavorite(id: Int, type: MediaType): Flow<Boolean> {
-        val currentUserId = userRepository.getCurrentUserId()
-        return if (currentUserId != null) {
-            favoriteDao.isFavorite(currentUserId, id, type.name)
-        } else {
-            // Para invitados, siempre devolver false
-            flowOf(false)
+        // Limpiar media_details
+        val allDetails = mediaDetailDao.getAllDetailsList()
+        for (detail in allDetails) {
+            if ((detail.id to detail.mediaType) !in favoriteSet) {
+                mediaDetailDao.deleteByIdAndType(detail.id, detail.mediaType)
+            }
         }
     }
 }
