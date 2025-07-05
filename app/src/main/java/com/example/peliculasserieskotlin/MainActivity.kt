@@ -115,6 +115,7 @@ fun AppNavigator(
                         com.example.peliculasserieskotlin.features.details.MediaDetailScreen(
                             mediaId = id,
                             type = type,
+                            isGuest = isGuest,
                             viewModel = detailViewModel,
                             onBack = { navController.popBackStack() }
                         )

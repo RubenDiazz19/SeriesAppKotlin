@@ -45,8 +45,8 @@ class MediaDetailViewModel @Inject constructor(
                                 releaseDate          = formatDate(item.releaseDate),
                                 voteAverageFormatted = "${item.voteAverage} / 10\n(${item.voteCount} votos)",
                                 runtimeFormatted     = item.runtime?.let { "$it minutos" },
-                                budgetFormatted      = item.budget?.let  { "$${"%,d".format(it)}" },
-                                revenueFormatted     = item.revenue?.let { "$${"%,d".format(it)}" },
+                                budgetFormatted      = item.budget?.takeIf { it > 0 }?.let  { "$${"%,d".format(it)}" },
+                                revenueFormatted     = item.revenue?.takeIf { it > 0 }?.let { "$${"%,d".format(it)}" },
                                 status               = item.status,
                                 genres               = item.genres,
                                 error                = null

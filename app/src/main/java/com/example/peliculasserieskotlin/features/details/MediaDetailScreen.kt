@@ -51,6 +51,7 @@ import kotlin.getValue
 fun MediaDetailScreen(
     mediaId: Int,
     type: MediaType,
+    isGuest: Boolean,
     viewModel: MediaDetailViewModel = hiltViewModel(),
     favoriteViewModel: FavoriteViewModel = hiltViewModel(),
     onBack: () -> Unit
@@ -114,30 +115,32 @@ fun MediaDetailScreen(
         }
 
         // Botón de favorito flotante (arriba a la derecha)
-        IconButton(
-            onClick = {
-                val mediaItem = MediaItem(
-                    id = mediaId,
-                    title = uiState?.title ?: "",
-                    posterUrl = uiState?.posterUrl ?: "",
-                    type = type,
-                    overview = uiState?.overview ?: "",
-                    voteAverage = extractVoteAverage(uiState?.voteAverageFormatted),
-                    backdropUrl = uiState?.posterUrl ?: ""
+        if (!isGuest) {
+            IconButton(
+                onClick = {
+                    val mediaItem = MediaItem(
+                        id = mediaId,
+                        title = uiState?.title ?: "",
+                        posterUrl = uiState?.posterUrl ?: "",
+                        type = type,
+                        overview = uiState?.overview ?: "",
+                        voteAverage = extractVoteAverage(uiState?.voteAverageFormatted),
+                        backdropUrl = uiState?.posterUrl ?: ""
+                    )
+                    favoriteViewModel.toggleFavorite(mediaItem, !isFavorite)
+                },
+                modifier = Modifier
+                    .padding(end = 16.dp, top = 60.dp)
+                    .size(40.dp)
+                    .align(Alignment.TopEnd)
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Quitar de favoritos" else "Añadir a favoritos",
+                    tint = if (isFavorite) Color.Red else Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
-                favoriteViewModel.toggleFavorite(mediaItem, !isFavorite)
-            },
-            modifier = Modifier
-                .padding(end = 16.dp, top = 60.dp)
-                .size(40.dp)
-                .align(Alignment.TopEnd)
-        ) {
-            Icon(
-                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = if (isFavorite) "Quitar de favoritos" else "Añadir a favoritos",
-                tint = if (isFavorite) Color.Red else Color.White,
-                modifier = Modifier.size(24.dp)
-            )
+            }
         }
     }
 }

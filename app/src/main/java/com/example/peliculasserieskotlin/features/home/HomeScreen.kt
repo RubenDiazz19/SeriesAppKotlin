@@ -223,7 +223,8 @@ fun HomeScreen(
                                     FavoriteContent(
                                         items = favoriteItems.filter { it.type == targetMediaType },
                                         listState = listState,
-                                        viewModel = viewModel
+                                        viewModel = viewModel,
+                                        isGuest = isGuest
                                     )
                                 }
                                 isGuest && sortBy == HomeViewModel.SortType.FAVORITE -> {
@@ -232,7 +233,8 @@ fun HomeScreen(
                                         pagedItems = pagedItems,
                                         targetMediaType = targetMediaType,
                                         listState = listState,
-                                        viewModel = viewModel
+                                        viewModel = viewModel,
+                                        isGuest = isGuest
                                     )
                                 }
                                 !isOnline -> {
@@ -269,7 +271,8 @@ fun HomeScreen(
                                         pagedItems = pagedItems,
                                         targetMediaType = targetMediaType,
                                         listState = listState,
-                                        viewModel = viewModel
+                                        viewModel = viewModel,
+                                        isGuest = isGuest
                                     )
                                 }
                             }
@@ -373,7 +376,8 @@ private fun SearchingState() {
 private fun FavoriteContent(
     items: List<com.example.peliculasserieskotlin.core.model.MediaItem>,
     listState: LazyGridState,
-    viewModel: HomeViewModel
+    viewModel: HomeViewModel,
+    isGuest: Boolean
 ) {
     if (items.isEmpty()) {
         EmptyFavorites()
@@ -398,9 +402,9 @@ private fun FavoriteContent(
                 MediaCard(
                     mediaItem = item,
                     isFavorite = isFavorite,
-                    onFavoriteClick = { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) },
+                    onFavoriteClick = if (!isGuest) { { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) } } else null,
                     onItemClick = { viewModel.onMediaItemSelected(it) },
-                    showFavoriteIcon = true
+                    showFavoriteIcon = !isGuest
                 )
             }
         }
@@ -421,9 +425,10 @@ private fun MainContent(
     pagedItems: androidx.paging.compose.LazyPagingItems<com.example.peliculasserieskotlin.core.model.MediaItem>,
     targetMediaType: MediaType,
     listState: LazyGridState,
-    viewModel: HomeViewModel
+    viewModel: HomeViewModel,
+    isGuest: Boolean
 ) {
-    Log.d("DEBUG", "[MainContent] isGuest: false")
+    Log.d("DEBUG", "[MainContent] isGuest: $isGuest")
     LazyVerticalGrid(
         state = listState,
         columns = GridCells.Adaptive(160.dp),
@@ -439,13 +444,13 @@ private fun MainContent(
             if (item != null && item.type == targetMediaType) {
                 val isFavorite by viewModel.isFavorite(item.id, item.type)
                     .collectAsState(initial = false)
-                Log.d("DEBUG", "[MediaCard] isGuest: false, item: ${item.title}")
+                Log.d("DEBUG", "[MediaCard] isGuest: $isGuest, item: ${item.title}")
                 MediaCard(
                     mediaItem = item,
                     isFavorite = isFavorite,
-                    onFavoriteClick = { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) },
+                    onFavoriteClick = if (!isGuest) { { mediaItem, newFavoriteState -> viewModel.toggleFavorite(mediaItem, newFavoriteState) } } else null,
                     onItemClick = { viewModel.onMediaItemSelected(it) },
-                    showFavoriteIcon = true
+                    showFavoriteIcon = !isGuest
                 )
             }
         }
