@@ -1,6 +1,7 @@
 package com.example.seriesappkotlin.data.model.responses
 
 import com.example.seriesappkotlin.core.model.GenreItem
+import com.example.seriesappkotlin.core.model.Season
 import com.example.seriesappkotlin.core.model.Serie
 import com.example.seriesappkotlin.core.model.SerieDetailItem
 import com.example.seriesappkotlin.data.model.MediaConstants
@@ -68,7 +69,9 @@ data class SeriesDetailResponse(
     val spokenLanguages: List<SpokenLanguage>?, // Idiomas hablados
     
     @SerializedName("networks")
-    val networks: List<NetworkResponse>? // Redes de televisión
+    val networks: List<NetworkResponse>?, // Redes de televisión
+    @SerializedName("seasons")
+    val seasons: List<SeasonResponse>?
 ) {
     /**
      * Valida que los campos críticos no sean nulos.
@@ -100,7 +103,8 @@ data class SeriesDetailResponse(
             numberOfEpisodes = numberOfEpisodes,
             genres = genres?.mapNotNull { it.id?.let { genreId -> GenreItem(genreId, it.name ?: "") } },
             status = status,
-            tagline = tagline
+            tagline = tagline,
+            seasons = seasons?.mapNotNull { it.toDomain() } ?: emptyList()
         )
     }
 
@@ -125,7 +129,8 @@ data class SeriesDetailResponse(
             numberOfEpisodes = numberOfEpisodes,
             genres = genres?.mapNotNull { it.id?.let { genreId -> GenreItem(genreId, it.name ?: "") } },
             status = status,
-            tagline = tagline
+            tagline = tagline,
+            seasons = seasons?.mapNotNull { it.toDomain() } ?: emptyList()
         )
     }
 }
@@ -143,6 +148,39 @@ data class NetworkResponse(
     @SerializedName("logo_path")
     val logoPath: String?
 )
+
+/**
+ * Modelo para representar una temporada desde la API
+ */
+data class SeasonResponse(
+    @SerializedName("id")
+    val id: Int?,
+    @SerializedName("name")
+    val name: String?,
+    @SerializedName("overview")
+    val overview: String?,
+    @SerializedName("poster_path")
+    val posterPath: String?,
+    @SerializedName("season_number")
+    val seasonNumber: Int?,
+    @SerializedName("episode_count")
+    val episodeCount: Int?,
+    @SerializedName("air_date")
+    val airDate: String?
+) {
+    fun toDomain(): Season? {
+        if (id == null || name == null || seasonNumber == null) return null
+        return Season(
+            id = id,
+            seasonNumber = seasonNumber,
+            name = name,
+            overview = overview ?: "",
+            episodeCount = episodeCount ?: 0,
+            posterUrl = MediaConstants.formatImageUrl(posterPath),
+            episodes = emptyList() // Se inicializa vacío, se cargará bajo demanda
+        )
+    }
+}
 
 /**
  * Modelo para representar un género desde la API

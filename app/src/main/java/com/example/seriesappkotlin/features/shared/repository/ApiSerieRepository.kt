@@ -67,7 +67,11 @@ class ApiSerieRepository @Inject constructor(
     override suspend fun getSerieDetails(serieId: Int): AppResult<Serie> {
         return try {
             val apiKey = context.getString(R.string.apiKey)
-            val response = seriesApiService.getSeriesDetails(seriesId = serieId, apiKey = apiKey)
+            val response = seriesApiService.getSeriesDetails(
+                seriesId = serieId,
+                apiKey = apiKey,
+                appendToResponse = "seasons"
+            )
             val serieDetail = response.toDomain()
             AppResult.Success(serieDetail)
         } catch (e: Exception) {

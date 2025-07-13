@@ -16,6 +16,7 @@ object SerieDetailItem {
         val numberOfEpisodes: Int?,
         val genres: List<GenreItem>?,
         val status: String?,
-        val tagline: String?
+        val tagline: String?,
+        val seasons: List<Season>
     )
 }

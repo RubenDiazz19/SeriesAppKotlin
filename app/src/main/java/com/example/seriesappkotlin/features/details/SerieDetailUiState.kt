@@ -1,6 +1,7 @@
 package com.example.seriesappkotlin.features.details
 
 import com.example.seriesappkotlin.core.model.GenreItem
+import com.example.seriesappkotlin.core.model.Season
 
 // Clase de estado para la UI, conteniendo datos listos para mostrar
 data class SerieDetailUiState(
@@ -18,5 +19,6 @@ data class SerieDetailUiState(
     val genres: List<GenreItem>? = null,
     val numberOfSeasons: Int? = null,      // Para series
     val numberOfEpisodes: Int? = null,     // Para series
+    val seasons: List<Season>? = null,
     val error: String? = null
 )

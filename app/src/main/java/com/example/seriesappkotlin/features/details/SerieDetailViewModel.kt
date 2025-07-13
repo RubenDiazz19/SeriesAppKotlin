@@ -45,6 +45,7 @@ class SerieDetailViewModel @Inject constructor(
                             genres = item.genres,
                             numberOfSeasons = item.numberOfSeasons,
                             numberOfEpisodes = item.numberOfEpisodes,
+                            seasons = item.seasons,
                             error = null
                         )
                     }

@@ -23,11 +23,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.seriesappkotlin.core.model.Season
 import com.example.seriesappkotlin.core.model.Serie
 import com.example.seriesappkotlin.features.favorites.WatchedViewModel
 
@@ -37,10 +39,9 @@ fun SerieDetailScreen(
     serieId: Int,
     onBackClick: () -> Unit,
     viewModel: SerieDetailViewModel = hiltViewModel(),
-    watchedViewModel: com.example.seriesappkotlin.features.favorites.WatchedViewModel = hiltViewModel()
+    watchedViewModel: WatchedViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(serieId) {
         viewModel.loadDetail(serieId)
@@ -101,7 +102,10 @@ fun SerieDetailScreen(
                     onWatchedClick = { newWatchedState ->
                         watchedViewModel.toggleWatched(serie, newWatchedState)
                     },
-                    modifier = Modifier.padding(paddingValues)
+                    modifier = Modifier.padding(paddingValues),
+                    onSeasonClick = { seasonId ->
+                        // TODO: Navigate to season detail
+                    }
                 )
             }
         } ?: run {
@@ -122,6 +126,7 @@ private fun SerieDetailContent(
     uiState: SerieDetailUiState,
     isWatched: Boolean,
     onWatchedClick: (Boolean) -> Unit,
+    onSeasonClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -259,6 +264,80 @@ private fun SerieDetailContent(
                         lineHeight = 20.sp
                     )
                 }
+            }
+            
+            // Seasons Section
+            uiState.seasons?.let { seasons ->
+                if (seasons.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SeasonsSection(seasons = seasons, onSeasonClick = onSeasonClick)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SeasonsSection(
+    seasons: List<Season>,
+    onSeasonClick: (Int) -> Unit
+) {
+    Column {
+        Text(
+            text = "Temporadas",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(seasons) { season ->
+                SeasonCard(season = season, onClick = { onSeasonClick(season.id) })
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SeasonCard(
+    season: Season,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .width(120.dp)
+            .height(220.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.DarkGray
+        )
+    ) {
+        Column {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(season.posterUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = season.name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.padding(8.dp)) {
+                Text(
+                    text = season.name,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${season.episodeCount} episodios",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
