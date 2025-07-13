@@ -1,6 +1,7 @@
 package com.example.seriesappkotlin
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -16,10 +17,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.seriesappkotlin.features.auth.AuthState
 import com.example.seriesappkotlin.features.details.SerieDetailViewModel
 import com.example.seriesappkotlin.features.details.SerieDetailScreen
 import com.example.seriesappkotlin.features.home.HomeScreen
 import com.example.seriesappkotlin.features.home.HomeViewModel
+import com.example.seriesappkotlin.features.seasondetail.SeasonDetailScreen
+import com.example.seriesappkotlin.features.seasondetail.SeasonDetailViewModel
 import com.example.seriesappkotlin.ui.theme.PeliculasSeriesKotlinTheme
 import dagger.hilt.android.AndroidEntryPoint
 import com.example.seriesappkotlin.features.auth.LoginScreen
@@ -31,6 +35,7 @@ class MainActivity : ComponentActivity() {
 
     private val homeViewModel: HomeViewModel by viewModels()
     private val detailViewModel: SerieDetailViewModel by viewModels()
+    private val seasonDetailViewModel: SeasonDetailViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +50,7 @@ class MainActivity : ComponentActivity() {
                     AppNavigator(
                         homeViewModel = homeViewModel,
                         detailViewModel = detailViewModel,
+                        seasonDetailViewModel = seasonDetailViewModel,
                         authViewModel = authViewModel
                     )
                 }
@@ -57,16 +63,17 @@ class MainActivity : ComponentActivity() {
 fun AppNavigator(
     homeViewModel: HomeViewModel,
     detailViewModel: SerieDetailViewModel,
+    seasonDetailViewModel: SeasonDetailViewModel,
     authViewModel: AuthViewModel
 ) {
     val navController = rememberNavController()
     val authState by authViewModel.authState.collectAsState()
-    val isGuest = authState is com.example.seriesappkotlin.features.auth.AuthState.Guest
-    android.util.Log.d("DEBUG", "[AppNavigator] isGuest: $isGuest, authState: $authState")
+    val isGuest = authState is AuthState.Guest
+    Log.d("DEBUG", "[AppNavigator] isGuest: $isGuest, authState: $authState")
 
     when (authState) {
-        is com.example.seriesappkotlin.features.auth.AuthState.Idle,
-        is com.example.seriesappkotlin.features.auth.AuthState.Error -> {
+        is AuthState.Idle,
+        is AuthState.Error -> {
             NavHost(navController = navController, startDestination = "login") {
                 composable("login") {
                     LoginScreen(
@@ -84,9 +91,9 @@ fun AppNavigator(
                 }
             }
         }
-        is com.example.seriesappkotlin.features.auth.AuthState.LoginSuccess,
-        is com.example.seriesappkotlin.features.auth.AuthState.RegisterSuccess,
-        is com.example.seriesappkotlin.features.auth.AuthState.Guest -> {
+        is AuthState.LoginSuccess,
+        is AuthState.RegisterSuccess,
+        is AuthState.Guest -> {
             // Solo aquí se permite cargar HomeScreen y los datos
             NavHost(navController = navController, startDestination = "home") {
                 composable("home") {
@@ -110,9 +117,30 @@ fun AppNavigator(
                         SerieDetailScreen(
                             serieId = id,
                             onBackClick = { navController.popBackStack() },
-                            viewModel = detailViewModel
+                            viewModel = detailViewModel,
+                            onSeasonClick = { serieId, seasonNumber ->
+                                navController.navigate("seasonDetail/$serieId/$seasonNumber")
+                            }
                         )
                     }
+                }
+                composable(
+                    route = "seasonDetail/{serieId}/{seasonNumber}",
+                    arguments = listOf(
+                        navArgument("serieId") { type = NavType.IntType },
+                        navArgument("seasonNumber") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val serieId = backStackEntry.arguments!!.getInt("serieId")
+                    val seasonNumber = backStackEntry.arguments!!.getInt("seasonNumber")
+                    seasonDetailViewModel.loadSeasonDetails(serieId, seasonNumber)
+
+                    SeasonDetailScreen(
+                        viewModel = seasonDetailViewModel,
+                        onBackClick = { navController.popBackStack() },
+                        serieId = serieId,
+                        seasonNumber = seasonNumber
+                    )
                 }
             }
         }

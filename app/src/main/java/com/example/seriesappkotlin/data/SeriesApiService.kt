@@ -1,6 +1,7 @@
 package com.example.seriesappkotlin.data
 
 import com.example.seriesappkotlin.data.model.SeriesApiResponse
+import com.example.seriesappkotlin.data.model.responses.SeasonDetailResponse
 import com.example.seriesappkotlin.data.model.responses.SeriesDetailResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -66,4 +67,20 @@ interface SeriesApiService {
         @Query("language") language: String = "es-ES",
         @Query("append_to_response") appendToResponse: String? = null
     ): SeriesDetailResponse
+
+    /**
+     * Obtiene los detalles completos de una temporada específica.
+     * @param seriesId ID de la serie
+     * @param seasonNumber Número de la temporada
+     * @param apiKey Clave de API para TMDB
+     * @param language Idioma de los resultados (por defecto es-ES)
+     * @return Detalles completos de la temporada incluyendo episodios
+     */
+    @GET("tv/{series_id}/season/{season_number}")
+    suspend fun getSeasonDetails(
+        @Path("series_id") seriesId: Int,
+        @Path("season_number") seasonNumber: Int,
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String = "es-ES"
+    ): SeasonDetailResponse
 }

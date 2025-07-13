@@ -7,6 +7,7 @@ import com.example.seriesappkotlin.core.database.dao.UserDao
 import com.example.seriesappkotlin.core.database.dao.WatchedDao
 import com.example.seriesappkotlin.core.database.entity.SerieDetailEntity
 import com.example.seriesappkotlin.core.database.entity.SerieEntity
+import com.example.seriesappkotlin.core.database.entity.SeasonEntity // Agregar este import
 import com.example.seriesappkotlin.core.database.entity.UserEntity
 import com.example.seriesappkotlin.core.database.entity.WatchedEntity
 
@@ -19,9 +20,10 @@ import com.example.seriesappkotlin.core.database.entity.WatchedEntity
         SerieEntity::class,
         WatchedEntity::class,
         SerieDetailEntity::class,
-        UserEntity::class
+        UserEntity::class,
+        SeasonEntity::class
     ],
-    version = 8, // Incrementar la versión por el cambio de esquema
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

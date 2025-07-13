@@ -11,6 +11,7 @@ import com.example.seriesappkotlin.data.SeriesApiService
 import com.example.seriesappkotlin.features.home.HomeViewModel
 import com.example.seriesappkotlin.core.util.AppResult
 import com.example.seriesappkotlin.R
+import com.example.seriesappkotlin.core.model.Season
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -74,6 +75,24 @@ class ApiSerieRepository @Inject constructor(
             )
             val serieDetail = response.toDomain()
             AppResult.Success(serieDetail)
+        } catch (e: Exception) {
+            AppResult.Error(e)
+        }
+    }
+
+    override suspend fun getSeasonDetails(
+        serieId: Int,
+        seasonNumber: Int
+    ): AppResult<Season> {
+        return try {
+            val apiKey = context.getString(R.string.apiKey)
+            val response = seriesApiService.getSeasonDetails(
+                seriesId = serieId,
+                seasonNumber = seasonNumber,
+                apiKey = apiKey
+            )
+            val season = response.toDomain()
+            AppResult.Success(season)
         } catch (e: Exception) {
             AppResult.Error(e)
         }

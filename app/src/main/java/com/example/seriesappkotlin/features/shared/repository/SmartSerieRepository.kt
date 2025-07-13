@@ -5,6 +5,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.example.seriesappkotlin.core.database.entity.toDomain
+import com.example.seriesappkotlin.core.model.Season
 import com.example.seriesappkotlin.core.model.Serie
 import com.example.seriesappkotlin.core.paging.SeriesPagingSource
 import com.example.seriesappkotlin.core.util.NetworkUtils
@@ -167,5 +168,18 @@ class SmartSerieRepository @Inject constructor(
         }
 
         return AppResult.Error(Exception("No network connection and no cached details."))
+    }
+
+    override suspend fun getSeasonDetails(
+        serieId: Int,
+        seasonNumber: Int
+    ): AppResult<Season> {
+        // Si hay conexión de red, obtener desde la API
+        if (networkUtils.isNetworkAvailable()) {
+            return apiRepository.getSeasonDetails(serieId, seasonNumber)
+        }
+    
+        // Sin conexión y sin caché
+        return AppResult.Error(Exception("No network connection and no cached season details."))
     }
 }

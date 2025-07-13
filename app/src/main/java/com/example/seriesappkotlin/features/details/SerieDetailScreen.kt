@@ -39,6 +39,7 @@ import com.example.seriesappkotlin.features.favorites.WatchedViewModel
 fun SerieDetailScreen(
     serieId: Int,
     onBackClick: () -> Unit,
+    onSeasonClick: (Int, Int) -> Unit, // Modified to pass serieId and seasonNumber
     viewModel: SerieDetailViewModel = hiltViewModel(),
     watchedViewModel: WatchedViewModel = hiltViewModel()
 ) {
@@ -64,8 +65,8 @@ fun SerieDetailScreen(
             } else {
                 SerieDetailContent(
                     uiState = state,
-                    onSeasonClick = { seasonId ->
-                        // TODO: Navigate to season detail
+                    onSeasonClick = { seasonNumber ->
+                        onSeasonClick(serieId, seasonNumber)
                     }
                 )
             }
@@ -328,7 +329,7 @@ private fun SeasonsSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(seasons) { season ->
-                SeasonCard(season = season, onClick = { onSeasonClick(season.id) })
+                SeasonCard(season = season, onClick = { onSeasonClick(season.seasonNumber) }) // Pass seasonNumber instead of id
             }
         }
     }

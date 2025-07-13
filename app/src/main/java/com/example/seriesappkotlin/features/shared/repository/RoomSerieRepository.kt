@@ -5,6 +5,7 @@ import com.example.seriesappkotlin.core.database.entity.toDomain
 import com.example.seriesappkotlin.core.database.entity.toEntity
 import com.example.seriesappkotlin.core.database.entity.SerieDetailEntity
 import com.example.seriesappkotlin.core.model.Serie
+import com.example.seriesappkotlin.core.model.Season
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -89,5 +90,28 @@ class RoomSerieRepository @Inject constructor(
 
         val expiredItems = serieDao.getAllSeriesList().filter { now - it.timestamp > expiration }
         expiredItems.forEach { serieDao.deleteById(it.id) }
+    }
+    
+    // -------- Season Details (cache) --------
+    
+    suspend fun getSeasonDetails(serieId: Int, seasonNumber: Int): Season? {
+        Log.d("RoomSerieRepository", "getSeasonDetails: serieId=$serieId, seasonNumber=$seasonNumber")
+        return serieDao.getSeasonDetails(serieId, seasonNumber)?.toDomain()
+    }
+    
+    suspend fun cacheSeasonDetails(season: Season, serieId: Int) {
+        Log.d("RoomSerieRepository", "cacheSeasonDetails: season=$season, serieId=$serieId")
+        val seasonEntity = season.toEntity(serieId)
+        serieDao.insertSeason(seasonEntity)
+    }
+    
+    suspend fun deleteSeasonDetails(serieId: Int, seasonNumber: Int) {
+        Log.d("RoomSerieRepository", "deleteSeasonDetails: serieId=$serieId, seasonNumber=$seasonNumber")
+        serieDao.deleteSeasonDetails(serieId, seasonNumber)
+    }
+    
+    suspend fun getAllSeasonsForSerie(serieId: Int): List<Season> {
+        Log.d("RoomSerieRepository", "getAllSeasonsForSerie: serieId=$serieId")
+        return serieDao.getAllSeasonsForSerie(serieId).map { it.toDomain() }
     }
 }

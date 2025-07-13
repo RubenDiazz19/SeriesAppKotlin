@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.seriesappkotlin.core.database.entity.SerieEntity
 import com.example.seriesappkotlin.core.database.entity.SerieDetailEntity
+import com.example.seriesappkotlin.core.database.entity.SeasonEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -49,4 +50,17 @@ interface SerieDao {
 
     @Query("DELETE FROM series WHERE id = :id")
     suspend fun deleteById(id: Int)
+
+    // Métodos para Season
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSeason(season: SeasonEntity)
+    
+    @Query("SELECT * FROM seasons WHERE serieId = :serieId AND seasonNumber = :seasonNumber LIMIT 1")
+    suspend fun getSeasonDetails(serieId: Int, seasonNumber: Int): SeasonEntity?
+    
+    @Query("DELETE FROM seasons WHERE serieId = :serieId AND seasonNumber = :seasonNumber")
+    suspend fun deleteSeasonDetails(serieId: Int, seasonNumber: Int)
+    
+    @Query("SELECT * FROM seasons WHERE serieId = :serieId")
+    suspend fun getAllSeasonsForSerie(serieId: Int): List<SeasonEntity>
 }

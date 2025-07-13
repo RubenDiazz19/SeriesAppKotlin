@@ -31,4 +31,6 @@ interface SerieRepository {
     ): Flow<PagingData<Serie>>
 
     suspend fun getSerieDetails(serieId: Int): AppResult<Serie>
+
+    suspend fun getSeasonDetails(serieId: Int, seasonNumber: Int): AppResult<com.example.seriesappkotlin.core.model.Season>
 }
