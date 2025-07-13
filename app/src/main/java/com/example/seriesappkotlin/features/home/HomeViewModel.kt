@@ -168,18 +168,31 @@ class HomeViewModel @Inject constructor(
         _showSearchBarForced.value = false
     }
 
+    // Agregar después de _showSearchBarForced
+    private val _hasActiveSearch = MutableStateFlow(false)
+    val hasActiveSearch: StateFlow<Boolean> = _hasActiveSearch.asStateFlow()
+
     fun hideInlineSearch() {
+        _inlineSearchActive.value = false
+        // No limpiar searchText ni _searchQuery aquí para mantener la búsqueda aplicada
+    }
+
+    // Nueva función para limpiar completamente la búsqueda
+    fun clearSearch() {
         _inlineSearchActive.value = false
         searchText = ""
         _searchQuery.value = null
+        _hasActiveSearch.value = false
     }
 
+    // Modificar onSearchTextChanged para actualizar hasActiveSearch
     fun onSearchTextChanged(text: String) {
         searchText = text
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(300)
             _searchQuery.value = text
+            _hasActiveSearch.value = text.isNotEmpty()
         }
     }
 

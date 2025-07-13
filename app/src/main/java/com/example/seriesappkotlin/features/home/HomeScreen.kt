@@ -1,5 +1,6 @@
 package com.example.seriesappkotlin.features.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,11 +8,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,6 +48,8 @@ fun HomeScreen(
     val isGuest = currentUser == null
     val showGenreFilter by viewModel.showGenreFilter.collectAsState()
     val selectedGenres by viewModel.selectedGenres.collectAsState()
+    val inlineSearchActive by viewModel.inlineSearchActive.collectAsState()
+    val hasActiveSearch by viewModel.hasActiveSearch.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -52,6 +57,24 @@ fun HomeScreen(
     val cachedSeries by viewModel.cachedSeries.collectAsState()
 
     val listState = rememberLazyGridState()
+
+    // Manejar navegación hacia atrás
+    BackHandler {
+        when {
+            inlineSearchActive -> {
+                // Primer back: ocultar barra pero mantener búsqueda
+                viewModel.hideInlineSearch()
+            }
+            hasActiveSearch -> {
+                // Segundo back: limpiar búsqueda completamente
+                viewModel.clearSearch()
+            }
+            else -> {
+                // Tercer back: salir de la app (comportamiento por defecto)
+                // No hacer nada, dejará que el sistema maneje la salida
+            }
+        }
+    }
 
     // Mostrar mensaje de sin conexión
     LaunchedEffect(uiState.isOffline) {
@@ -79,7 +102,12 @@ fun HomeScreen(
         topBar = {
             ModernTopBar(
                 currentUser = currentUser,
-                isGuest = isGuest
+                isGuest = isGuest,
+                searchText = viewModel.searchText,
+                isSearchActive = inlineSearchActive,
+                onSearchClick = viewModel::showInlineSearch,
+                onSearchTextChanged = viewModel::onSearchTextChanged,
+                onSearchClose = viewModel::hideInlineSearch
             )
         },
         bottomBar = {
@@ -101,7 +129,8 @@ fun HomeScreen(
                             viewModel.showGenreFilter()
                         }
                     },
-                    isFilterActive = showGenreFilter || selectedGenres.isNotEmpty()
+                    isFilterActive = showGenreFilter || selectedGenres.isNotEmpty(),
+                    filterCount = selectedGenres.size
                 )
             }
         }
@@ -193,30 +222,90 @@ private fun CompactGenreChip(
 @Composable
 private fun ModernTopBar(
     currentUser: com.example.seriesappkotlin.core.database.entity.UserEntity? = null,
-    isGuest: Boolean = true
+    isGuest: Boolean = true,
+    searchText: String = "",
+    isSearchActive: Boolean = false,
+    onSearchClick: () -> Unit = {},
+    onSearchTextChanged: (String) -> Unit = {},
+    onSearchClose: () -> Unit = {}
 ) {
     TopAppBar(
         title = {
-            Text(
-                text = if (isGuest) {
-                    "Listado de Series"
-                } else {
-                    "¡Bienvenido, ${currentUser?.username ?: "Usuario"}!"
-                },
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
+            if (isSearchActive) {
+                // Barra de búsqueda mejorada con mejor visibilidad
+                OutlinedTextField(
+                    value = searchText,
+                    onValueChange = onSearchTextChanged,
+                    placeholder = {
+                        Text(
+                            text = "Buscar una serie...",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 16.sp
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp), // Aumentar altura para mejor visibilidad
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFFFFD700),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.8f), // Más visible
+                        cursorColor = Color(0xFFFFD700),
+                        focusedContainerColor = Color.Black.copy(alpha = 0.3f), // Fondo semi-transparente
+                        unfocusedContainerColor = Color.Black.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(12.dp), // Bordes más redondeados
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = Color.White
+                    )
+                )
+            } else {
+                Text(
+                    text = if (isGuest) {
+                        "Listado de Series"
+                    } else {
+                        "¡Bienvenido, ${currentUser?.username ?: "Usuario"}!"
+                    },
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         },
         actions = {
-            IconButton(
-                onClick = { /* TODO: Implementar acción del ojo */ }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = "Ver opciones",
-                    tint = Color.White
-                )
+            if (isSearchActive) {
+                // Botón para cerrar la búsqueda con mejor visibilidad
+                IconButton(
+                    onClick = onSearchClose,
+                    modifier = Modifier
+                        .background(
+                            Color.White.copy(alpha = 0.1f),
+                            CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cerrar búsqueda",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            } else {
+                // Botón para abrir la búsqueda
+                IconButton(
+                    onClick = onSearchClick
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -229,7 +318,8 @@ private fun ModernTopBar(
 @Composable
 private fun FilterBottomBar(
     onFilterClick: () -> Unit,
-    isFilterActive: Boolean = false
+    isFilterActive: Boolean = false,
+    filterCount: Int = 0
 ) {
     Surface(
         modifier = Modifier
@@ -264,7 +354,7 @@ private fun FilterBottomBar(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "FILTROS",
+                        text = if (filterCount > 0) "FILTROS($filterCount)" else "FILTROS",
                         color = Color.Black,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
