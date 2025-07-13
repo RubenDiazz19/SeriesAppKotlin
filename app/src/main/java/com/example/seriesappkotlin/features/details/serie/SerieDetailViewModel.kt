@@ -1,4 +1,4 @@
-package com.example.seriesappkotlin.features.details
+package com.example.seriesappkotlin.features.details.serie
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -1,4 +1,4 @@
-package com.example.seriesappkotlin.features.seasondetail
+package com.example.seriesappkotlin.features.details.season
 
 import com.example.seriesappkotlin.core.model.Episode
 

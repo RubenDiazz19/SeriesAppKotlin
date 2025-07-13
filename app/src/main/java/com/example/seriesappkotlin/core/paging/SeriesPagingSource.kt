@@ -50,6 +50,8 @@ class SeriesPagingSource(
                         HomeViewModel.SortType.WATCHED -> {
                             emptyList()
                         }
+
+                        HomeViewModel.SortType.FAVORITES -> TODO()
                     }
                 }
             }

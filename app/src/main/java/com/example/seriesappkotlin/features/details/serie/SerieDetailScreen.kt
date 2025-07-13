@@ -1,5 +1,4 @@
-
-package com.example.seriesappkotlin.features.details
+package com.example.seriesappkotlin.features.details.serie
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -32,7 +32,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.seriesappkotlin.core.model.Season
 import com.example.seriesappkotlin.core.model.Serie
-import com.example.seriesappkotlin.features.favorites.WatchedViewModel
 import com.example.seriesappkotlin.features.favorites.FavoriteViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -206,7 +205,7 @@ private fun SerieDetailContent(
                     Text(
                         text = tagline,
                         style = MaterialTheme.typography.titleMedium,
-                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        fontStyle = FontStyle.Italic,
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 4.dp)
                     )

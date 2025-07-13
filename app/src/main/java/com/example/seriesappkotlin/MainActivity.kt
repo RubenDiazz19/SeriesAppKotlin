@@ -18,12 +18,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.seriesappkotlin.features.auth.AuthState
-import com.example.seriesappkotlin.features.details.SerieDetailViewModel
-import com.example.seriesappkotlin.features.details.SerieDetailScreen
+import com.example.seriesappkotlin.features.details.serie.SerieDetailViewModel
+import com.example.seriesappkotlin.features.details.serie.SerieDetailScreen
 import com.example.seriesappkotlin.features.home.HomeScreen
 import com.example.seriesappkotlin.features.home.HomeViewModel
-import com.example.seriesappkotlin.features.seasondetail.SeasonDetailScreen
-import com.example.seriesappkotlin.features.seasondetail.SeasonDetailViewModel
+import com.example.seriesappkotlin.features.details.season.SeasonDetailScreen
+import com.example.seriesappkotlin.features.details.season.SeasonDetailViewModel
 import com.example.seriesappkotlin.ui.theme.PeliculasSeriesKotlinTheme
 import dagger.hilt.android.AndroidEntryPoint
 import com.example.seriesappkotlin.features.auth.LoginScreen

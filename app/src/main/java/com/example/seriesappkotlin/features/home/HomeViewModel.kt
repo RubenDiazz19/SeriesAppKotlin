@@ -13,6 +13,7 @@ import com.example.seriesappkotlin.core.util.NetworkUtils
 import com.example.seriesappkotlin.features.shared.repository.SerieRepository
 import com.example.seriesappkotlin.features.shared.repository.UserRepository
 import com.example.seriesappkotlin.features.shared.repository.WatchedRepository
+import com.example.seriesappkotlin.features.shared.repository.FavoriteRepository // Agregar esta línea
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -25,13 +26,14 @@ class HomeViewModel @Inject constructor(
     private val serieRepository: SerieRepository,
     private val watchedRepository: WatchedRepository,
     private val userRepository: UserRepository,
-    private val networkUtils: NetworkUtils
+    private val networkUtils: NetworkUtils,
+    private val favoriteRepository: FavoriteRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    enum class SortType { POPULAR, RATING, WATCHED }
+    enum class SortType { POPULAR, RATING, WATCHED, FAVORITES }
 
     private val _sortBy = MutableStateFlow(SortType.RATING)
     val sortBy: StateFlow<SortType> = _sortBy.asStateFlow()
@@ -42,6 +44,9 @@ class HomeViewModel @Inject constructor(
     private val _showSearchBarForced = MutableStateFlow(false)
     val showSearchBarForced: StateFlow<Boolean> = _showSearchBarForced.asStateFlow()
 
+    private val _hasActiveSearch = MutableStateFlow(false)
+    val hasActiveSearch: StateFlow<Boolean> = _hasActiveSearch.asStateFlow()
+
     var searchText by mutableStateOf("")
         private set
 
@@ -50,28 +55,87 @@ class HomeViewModel @Inject constructor(
     private val _selectedGenres = MutableStateFlow<List<GenreItem>>(emptyList())
     val selectedGenres: StateFlow<List<GenreItem>> = _selectedGenres.asStateFlow()
 
-    // Agregar estas líneas después de _selectedGenres
     private val _showGenreFilter = MutableStateFlow(false)
     val showGenreFilter: StateFlow<Boolean> = _showGenreFilter.asStateFlow()
+
+    // Estados para filtros de favoritos y vistas
+    private val _showFavoritesOnly = MutableStateFlow(false)
+    val showFavoritesOnly: StateFlow<Boolean> = _showFavoritesOnly.asStateFlow()
+
+    private val _showWatchedOnly = MutableStateFlow(false)
+    val showWatchedOnly: StateFlow<Boolean> = _showWatchedOnly.asStateFlow()
+
+    val favoriteSeries: StateFlow<List<Serie>> = combine(
+        userRepository.currentUser,
+        _showFavoritesOnly
+    ) { currentUser: Any?, showFavoritesOnly: Boolean ->
+        val isGuest = currentUser == null
+        if (showFavoritesOnly && !isGuest) {
+            try {
+                favoriteRepository.getFavoriteSeries()
+            } catch (e: Exception) {
+                updateError(e.localizedMessage ?: "Error al cargar las series favoritas")
+                flowOf(emptyList<Serie>())
+            }
+        } else {
+            flowOf(emptyList<Serie>())
+        }
+    }.flatMapLatest { it }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    // Funciones para controlar los filtros
+    fun toggleFavoritesFilter() {
+        _showFavoritesOnly.value = !_showFavoritesOnly.value
+        if (_showFavoritesOnly.value) {
+            _showWatchedOnly.value = false // Solo uno activo a la vez
+        }
+    }
+
+    fun toggleWatchedFilter() {
+        _showWatchedOnly.value = !_showWatchedOnly.value
+        if (_showWatchedOnly.value) {
+            _showFavoritesOnly.value = false // Solo uno activo a la vez
+        }
+    }
+
+    fun clearAllFilters() {
+        _showFavoritesOnly.value = false
+        _showWatchedOnly.value = false
+        _selectedGenres.value = emptyList()
+    }
 
     val pagedSeries: StateFlow<Flow<PagingData<Serie>>> = combine(
         _sortBy,
         _searchQuery,
         userRepository.currentUser,
-        _selectedGenres
-    ) { sort, query, currentUser, selectedGenres ->
+        _selectedGenres,
+        combine(_showFavoritesOnly, _showWatchedOnly) { fav, watched -> Pair(fav, watched) }
+    ) { sort: SortType, query: String?, currentUser: Any?, selectedGenres: List<GenreItem>, filters: Pair<Boolean, Boolean> ->
         val isGuest = currentUser == null
-        val genreIds = selectedGenres.map { it.id }.filter { it != -1 }
-
-        if (sort == SortType.WATCHED && !isGuest) {
-            flowOf(PagingData.empty())
-        } else {
-            try {
-                serieRepository.getPagedSeries(sort, query, genreIds)
-                    .cachedIn(viewModelScope)
-            } catch (e: Exception) {
-                updateError(e.localizedMessage ?: "Error al cargar los datos")
-                flowOf(PagingData.empty())
+        val (showFavoritesOnly, showWatchedOnly) = filters
+        val genreIds: List<Int>? = selectedGenres.map { it.id }.filter { it != -1 }.takeIf { it.isNotEmpty() }
+    
+        when {
+            sort == SortType.WATCHED && !isGuest -> flowOf(PagingData.empty<Serie>())
+            sort == SortType.FAVORITES && !isGuest -> flowOf(PagingData.empty<Serie>())
+            // Remover estas líneas que causan el problema:
+            // showFavoritesOnly && !isGuest -> flowOf(PagingData.empty<Serie>())
+            // showWatchedOnly && !isGuest -> flowOf(PagingData.empty<Serie>())
+            else -> {
+                try {
+                    serieRepository.getPagedSeries(
+                        sortType = sort,
+                        searchQuery = query,
+                        genreIds = genreIds
+                    ).cachedIn(viewModelScope)
+                } catch (e: Exception) {
+                    updateError(e.localizedMessage ?: "Error al cargar los datos")
+                    flowOf(PagingData.empty<Serie>())
+                }
             }
         }
     }.stateIn(
@@ -83,17 +147,17 @@ class HomeViewModel @Inject constructor(
     val watchedSeries: StateFlow<List<Serie>> = combine(
         _sortBy,
         userRepository.currentUser
-    ) { sort, currentUser ->
+    ) { sort: SortType, currentUser: Any? ->
         val isGuest = currentUser == null
         if (sort == SortType.WATCHED && !isGuest) {
             try {
                 watchedRepository.getWatchedSeries()
             } catch (e: Exception) {
                 updateError(e.localizedMessage ?: "Error al cargar las series vistas")
-                flowOf(emptyList())
+                flowOf(emptyList<Serie>())
             }
         } else {
-            flowOf(emptyList())
+            flowOf(emptyList<Serie>())
         }
     }.flatMapLatest { it }
         .stateIn(
@@ -103,12 +167,12 @@ class HomeViewModel @Inject constructor(
         )
 
     val cachedSeries: StateFlow<List<Serie>> = _selectedGenres
-        .flatMapLatest { selectedGenres ->
-            serieRepository.getSeriesFromLocalDb().map { serieList ->
+        .flatMapLatest { selectedGenres: List<GenreItem> ->
+            serieRepository.getSeriesFromLocalDb().map { serieList: List<Serie> ->
                 if (selectedGenres.isEmpty()) {
                     serieList
                 } else {
-                    serieList.filter { item ->
+                    serieList.filter { item: Serie ->
                         val itemGenreIds = item.genres?.map { it.id } ?: emptyList()
                         selectedGenres.any { it.id in itemGenreIds }
                     }
@@ -126,7 +190,7 @@ class HomeViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             var wasOffline = false
-            networkUtils.getNetworkStatusFlow().collect { isConnected ->
+            networkUtils.getNetworkStatusFlow().collect { isConnected: Boolean ->
                 _uiState.update { it.copy(isOffline = !isConnected) }
                 if (isConnected && wasOffline) {
                     reloadAllData()
@@ -168,10 +232,6 @@ class HomeViewModel @Inject constructor(
         _showSearchBarForced.value = false
     }
 
-    // Agregar después de _showSearchBarForced
-    private val _hasActiveSearch = MutableStateFlow(false)
-    val hasActiveSearch: StateFlow<Boolean> = _hasActiveSearch.asStateFlow()
-
     fun hideInlineSearch() {
         _inlineSearchActive.value = false
         // No limpiar searchText ni _searchQuery aquí para mantener la búsqueda aplicada
@@ -191,7 +251,7 @@ class HomeViewModel @Inject constructor(
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(300)
-            _searchQuery.value = text
+            _searchQuery.value = if (text.isBlank()) null else text
             _hasActiveSearch.value = text.isNotEmpty()
         }
     }
@@ -214,7 +274,6 @@ class HomeViewModel @Inject constructor(
         _selectedGenres.value = currentSelection
     }
 
-    // Estas funciones ya están definidas correctamente
     fun showGenreFilter() {
         _showGenreFilter.value = true
     }

@@ -12,9 +12,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -50,6 +54,10 @@ fun HomeScreen(
     val selectedGenres by viewModel.selectedGenres.collectAsState()
     val inlineSearchActive by viewModel.inlineSearchActive.collectAsState()
     val hasActiveSearch by viewModel.hasActiveSearch.collectAsState()
+    
+    // Agregar estas líneas para manejar favoritos
+    val showFavoritesOnly by viewModel.showFavoritesOnly.collectAsState()
+    val favoriteSeries by viewModel.favoriteSeries.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -99,15 +107,20 @@ fun HomeScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        // Modificar la llamada a ModernTopBar en HomeScreen
         topBar = {
             ModernTopBar(
                 currentUser = currentUser,
                 isGuest = isGuest,
                 searchText = viewModel.searchText,
                 isSearchActive = inlineSearchActive,
+                showFavoritesOnly = viewModel.showFavoritesOnly.collectAsState().value,
+                showWatchedOnly = viewModel.showWatchedOnly.collectAsState().value,
                 onSearchClick = viewModel::showInlineSearch,
                 onSearchTextChanged = viewModel::onSearchTextChanged,
-                onSearchClose = viewModel::hideInlineSearch
+                onSearchClose = viewModel::hideInlineSearch,
+                onToggleFavorites = viewModel::toggleFavoritesFilter,
+                onToggleWatched = viewModel::toggleWatchedFilter // Cambiar de viewModel::uiState a viewModel::toggleWatchedFilter
             )
         },
         bottomBar = {
@@ -142,6 +155,16 @@ fun HomeScreen(
                 .background(Color.Black)
         ) {
             when {
+                // Agregar condición para mostrar favoritos
+                showFavoritesOnly && !isGuest -> {
+                    ModernSeriesGrid(
+                        items = favoriteSeries,
+                        listState = listState,
+                        favoriteViewModel = favoriteViewModel,
+                        isGuest = isGuest,
+                        onNavigateToDetail = onNavigateToDetail
+                    )
+                }
                 uiState.isOffline -> {
                     ModernSeriesGrid(
                         items = cachedSeries,
@@ -225,9 +248,13 @@ private fun ModernTopBar(
     isGuest: Boolean = true,
     searchText: String = "",
     isSearchActive: Boolean = false,
+    showFavoritesOnly: Boolean = false,
+    showWatchedOnly: Boolean = false,
     onSearchClick: () -> Unit = {},
     onSearchTextChanged: (String) -> Unit = {},
-    onSearchClose: () -> Unit = {}
+    onSearchClose: () -> Unit = {},
+    onToggleFavorites: () -> Unit = {},
+    onToggleWatched: () -> Unit = {}
 ) {
     TopAppBar(
         title = {
@@ -295,6 +322,33 @@ private fun ModernTopBar(
                     )
                 }
             } else {
+                // Botones de filtros (solo para usuarios logueados)
+                if (!isGuest) {
+                    // Botón de favoritos
+                    IconButton(
+                        onClick = onToggleFavorites
+                    ) {
+                        Icon(
+                            imageVector = if (showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Filtrar favoritos",
+                            tint = if (showFavoritesOnly) Color(0xFFFFD700) else Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    
+                    // Botón de vistas
+                    IconButton(
+                        onClick = onToggleWatched
+                    ) {
+                        Icon(
+                            imageVector = if (showWatchedOnly) Icons.Filled.Check else Icons.Outlined.Check,
+                            contentDescription = "Filtrar vistas",
+                            tint = if (showWatchedOnly) Color(0xFFFFD700) else Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                
                 // Botón para abrir la búsqueda
                 IconButton(
                     onClick = onSearchClick

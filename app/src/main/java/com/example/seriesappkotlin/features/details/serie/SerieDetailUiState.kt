@@ -1,4 +1,4 @@
-package com.example.seriesappkotlin.features.details
+package com.example.seriesappkotlin.features.details.serie
 
 import com.example.seriesappkotlin.core.model.GenreItem
 import com.example.seriesappkotlin.core.model.Season
