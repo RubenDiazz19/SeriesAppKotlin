@@ -3,7 +3,7 @@ package com.example.peliculasserieskotlin.features.details
 import com.example.peliculasserieskotlin.core.model.GenreItem
 
 // Clase de estado para la UI, conteniendo datos listos para mostrar
-data class MediaDetailUiState(
+data class SerieDetailUiState(
     val title: String = "",
     val tagline: String? = null,
     val overview: String = "",

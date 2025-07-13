@@ -11,13 +11,13 @@ import javax.inject.Inject
 class App : Application() {
     
     @Inject
-    lateinit var roomMediaRepository: com.example.peliculasserieskotlin.features.shared.repository.RoomMediaRepository
+    lateinit var roomSerieRepository: com.example.peliculasserieskotlin.features.shared.repository.RoomSerieRepository
     
     override fun onCreate() {
         super.onCreate()
         // Limpiar la caché excepto favoritos al iniciar
         CoroutineScope(Dispatchers.IO).launch {
-            roomMediaRepository.clearCacheExceptFavorites()
+            roomSerieRepository.clearCacheExceptFavorites()
         }
     }
 }

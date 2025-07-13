@@ -1,8 +1,10 @@
 package com.example.peliculasserieskotlin.data.model.responses
 
 import com.example.peliculasserieskotlin.core.model.GenreItem
+import com.example.peliculasserieskotlin.core.model.ProductionCompanyItem
+import com.example.peliculasserieskotlin.core.model.ProductionCountryItem
+import com.example.peliculasserieskotlin.core.model.SpokenLanguageItem
 import com.example.peliculasserieskotlin.core.model.Serie
-import com.example.peliculasserieskotlin.core.model.SerieDetailItem
 import com.example.peliculasserieskotlin.data.model.MediaConstants
 import com.google.gson.annotations.SerializedName
 
@@ -79,32 +81,6 @@ data class SeriesDetailResponse(
     }
 
     /**
-     * Convierte un SeriesDetailResponse a un MediaDetailItem del dominio con todos los detalles.
-     * Maneja valores nulos con valores predeterminados.
-     */
-    fun toDetailedDomain(): SerieDetailItem.SeriesDetailItem {
-        require(isValid()) { "SeriesDetailResponse no es válido: id o name son nulos" }
-        
-        return SerieDetailItem.SeriesDetailItem(
-            id = id ?: 0,
-            title = name ?: "Serie desconocida",
-            overview = overview ?: "Sin descripción",
-            posterUrl = MediaConstants.formatImageUrl(posterPath),
-            backdropUrl = MediaConstants.formatImageUrl(backdropPath, MediaConstants.DEFAULT_BACKDROP_SIZE),
-            voteAverage = voteAverage ?: 0.0,
-            originalTitle = originalName,
-            firstAirDate = firstAirDate,
-            voteCount = voteCount,
-            runtime = episodeRunTime?.firstOrNull(),
-            numberOfSeasons = numberOfSeasons,
-            numberOfEpisodes = numberOfEpisodes,
-            genres = genres?.mapNotNull { it.id?.let { genreId -> GenreItem(genreId, it.name ?: "") } },
-            status = status,
-            tagline = tagline
-        )
-    }
-
-    /**
      * Convierte SeriesDetailResponse a Serie del dominio.
      */
     fun toDomain(): Serie {
@@ -131,6 +107,59 @@ data class SeriesDetailResponse(
 }
 
 /**
+ * Modelo para representar un género desde la API
+ */
+data class Genre(
+    @SerializedName("id")
+    val id: Int?,
+    
+    @SerializedName("name")
+    val name: String?
+)
+
+/**
+ * Modelo para representar una compañía productora desde la API
+ */
+data class ProductionCompany(
+    @SerializedName("id")
+    val id: Int?,
+    
+    @SerializedName("name")
+    val name: String?,
+    
+    @SerializedName("logo_path")
+    val logoPath: String?,
+    
+    @SerializedName("origin_country")
+    val originCountry: String?
+)
+
+/**
+ * Modelo para representar un país de producción desde la API
+ */
+data class ProductionCountry(
+    @SerializedName("iso_3166_1")
+    val iso3166_1: String?,
+    
+    @SerializedName("name")
+    val name: String?
+)
+
+/**
+ * Modelo para representar un idioma hablado desde la API
+ */
+data class SpokenLanguage(
+    @SerializedName("english_name")
+    val englishName: String?,
+    
+    @SerializedName("iso_639_1")
+    val iso639_1: String?,
+    
+    @SerializedName("name")
+    val name: String?
+)
+
+/**
  * Modelo para representar una red de televisión
  */
 data class NetworkResponse(
@@ -143,53 +172,3 @@ data class NetworkResponse(
     @SerializedName("logo_path")
     val logoPath: String?
 )
-
-/**
- * Modelo para representar un género desde la API
- */
-data class Genre(
-    @SerializedName("id")
-    val id: Int?,
-    @SerializedName("name")
-    val name: String?
-)
-
-/**
- * Modelo para representar una compañía productora desde la API
- */
-data class ProductionCompany(
-    @SerializedName("id")
-    val id: Int?,
-    @SerializedName("name")
-    val name: String?,
-    @SerializedName("logo_path")
-    val logoPath: String?,
-    @SerializedName("origin_country")
-    val originCountry: String?
-)
-
-/**
- * Modelo para representar un país de producción desde la API
- */
-data class ProductionCountry(
-    @SerializedName("iso_3166_1")
-    val iso3166_1: String?,
-    @SerializedName("name")
-    val name: String?
-)
-
-/**
- * Modelo para representar un idioma hablado desde la API
- */
-data class SpokenLanguage(
-    @SerializedName("english_name")
-    val englishName: String?,
-    @SerializedName("iso_639_1")
-    val iso639_1: String?,
-    @SerializedName("name")
-    val name: String?
-)
-
-// Función de extensión para compatibilidad
-fun SeriesDetailResponse.toDetailedDomain(): SerieDetailItem.SeriesDetailItem = this.toDetailedDomain()
-

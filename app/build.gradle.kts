@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.peliculasserieskotlin"
+    namespace = "com.example.seriesappkotlin"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.peliculasserieskotlin"
+        applicationId = "com.example.seriesappkotlin"
         minSdk = 30
         targetSdk = 35
         versionCode = 1

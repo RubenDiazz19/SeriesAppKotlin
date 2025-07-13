@@ -1,7 +1,7 @@
 package com.example.peliculasserieskotlin.features.shared.components
 
 import androidx.compose.runtime.*
-import com.example.peliculasserieskotlin.core.model.MediaItem
+import com.example.peliculasserieskotlin.core.model.Serie
 
 /**
  * Helper centralizado para manejar el estado de favorito y la acción de toggle.
@@ -9,9 +9,9 @@ import com.example.peliculasserieskotlin.core.model.MediaItem
  */
 @Composable
 fun rememberFavoriteState(
-    mediaItem: MediaItem,
+    mediaItem: Serie,
     isFavorite: Boolean,
-    onFavoriteToggle: (MediaItem, Boolean) -> Unit
+    onFavoriteToggle: (Serie, Boolean) -> Unit
 ): Pair<Boolean, () -> Unit> {
     var localFavorite by remember { mutableStateOf(isFavorite) }
 
@@ -27,4 +27,4 @@ fun rememberFavoriteState(
     }
 
     return Pair(localFavorite, toggleFavorite)
-} 
+}

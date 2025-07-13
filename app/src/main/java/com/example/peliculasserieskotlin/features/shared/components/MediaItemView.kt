@@ -21,19 +21,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import com.example.peliculasserieskotlin.core.model.MediaItem
+import com.example.peliculasserieskotlin.core.model.Serie
 import com.example.peliculasserieskotlin.features.shared.components.rememberFavoriteState
 
 @SuppressLint("DefaultLocale")
 @Composable
 fun MediaItemView(
-    mediaItem: MediaItem,
+    serie: Serie,
     isFavorite: Boolean = false,
-    onFavoriteClick: ((mediaItem: MediaItem, isFavorite: Boolean) -> Unit)? = null,
-    onItemClick: ((mediaItem: MediaItem) -> Unit)? = null // NUEVO parámetro
+    onFavoriteClick: ((serie: Serie, isFavorite: Boolean) -> Unit)? = null,
+    onItemClick: ((serie: Serie) -> Unit)? = null
 ) {
     val (localFavorite, toggleFavorite) = rememberFavoriteState(
-        mediaItem = mediaItem,
+        mediaItem = serie,
         isFavorite = isFavorite,
         onFavoriteToggle = { item, fav -> onFavoriteClick?.invoke(item, fav) }
     )
@@ -47,7 +47,7 @@ fun MediaItemView(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(240.dp)
-                .clickable { onItemClick?.invoke(mediaItem) }, // Detectar pulsación
+                .clickable { onItemClick?.invoke(serie) },
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
@@ -55,8 +55,8 @@ fun MediaItemView(
                 modifier = Modifier.fillMaxSize()
             ) {
                 Image(
-                    painter = rememberAsyncImagePainter(model = mediaItem.posterUrl),
-                    contentDescription = "Poster of ${mediaItem.title}",
+                    painter = rememberAsyncImagePainter(model = serie.posterUrl),
+                    contentDescription = "Poster of ${serie.title}",
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(12.dp)),
@@ -77,7 +77,7 @@ fun MediaItemView(
                     verticalAlignment = Alignment.Top
                 ) {
                     Text(
-                        text = "⭐ ${String.format("%.1f", mediaItem.voteAverage)}",
+                        text = "⭐ ${String.format("%.1f", serie.voteAverage)}",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodySmall
@@ -100,7 +100,7 @@ fun MediaItemView(
                         .align(Alignment.BottomStart)
                         .padding(start = 8.dp, bottom = 8.dp)
                 ) {
-                    mediaItem.genres?.take(2)?.forEachIndexed { idx, genre ->
+                    serie.genres?.take(2)?.forEachIndexed { idx, genre ->
                         Box(
                             modifier = Modifier
                                 .background(
@@ -123,7 +123,7 @@ fun MediaItemView(
         }
 
         Text(
-            text = mediaItem.title,
+            text = serie.title,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             maxLines = 2,

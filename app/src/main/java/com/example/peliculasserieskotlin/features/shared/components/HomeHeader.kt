@@ -125,11 +125,11 @@ fun HomeHeader(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 SortButton(
-                    isSelected = sortBy == HomeViewModel.SortType.ALPHABETIC,
+                    isSelected = sortBy == HomeViewModel.SortType.POPULAR,
                     icon = Icons.Default.Edit,
-                    contentDescription = "Ordenar alfabéticamente",
+                    contentDescription = "Ordenar por popularidad",
                     selectedColor = MaterialTheme.colorScheme.primary,
-                    onClick = { onSortTypeSelected(HomeViewModel.SortType.ALPHABETIC) }
+                    onClick = { onSortTypeSelected(HomeViewModel.SortType.POPULAR) }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 if (showFavoriteSort) {

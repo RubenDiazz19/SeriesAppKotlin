@@ -1,8 +1,7 @@
 package com.example.peliculasserieskotlin.data.model
 
 import com.example.peliculasserieskotlin.core.model.GenreItem
-import com.example.peliculasserieskotlin.core.model.MediaItem
-import com.example.peliculasserieskotlin.core.model.MediaType
+import com.example.peliculasserieskotlin.core.model.Serie
 import com.google.gson.annotations.SerializedName
 
 /**
@@ -43,22 +42,49 @@ data class SeriesApiModel(
     }
 
     /**
-     * Convierte un SeriesApiModel a un MediaItem del dominio.
-     * Unifica series y películas bajo un mismo modelo.
+     * Convierte un SeriesApiModel directamente a Serie del dominio.
      */
-    fun toDomain(): MediaItem {
+    fun toSerie(): Serie {
         require(isValid()) { "SeriesApiModel no es válido: id o name son nulos" }
         
-        return MediaItem(
+        return Serie(
             id = id ?: 0,
             title = name ?: "Serie desconocida",
             overview = overview ?: "Sin descripción",
             posterUrl = MediaConstants.formatImageUrl(posterPath),
             backdropUrl = MediaConstants.formatImageUrl(backdropPath, MediaConstants.DEFAULT_BACKDROP_SIZE),
             voteAverage = voteAverage ?: 0.0,
-            type = MediaType.SERIES,
-            genres = genreIds?.mapNotNull { id -> GenreItem(id, genreIdToName(id)) }
+            genres = genreIds?.mapNotNull { id -> GenreItem(id, genreIdToName(id)) },
+            originalTitle = name,
+            firstAirDate = firstAirDate
         )
+    }
+
+    /**
+     * Convierte un ID de género a su nombre correspondiente
+     */
+    private fun genreIdToName(genreId: Int): String {
+        return when (genreId) {
+            28 -> "Acción"
+            12 -> "Aventura"
+            16 -> "Animación"
+            35 -> "Comedia"
+            80 -> "Crimen"
+            18 -> "Drama"
+            10751 -> "Familiar"
+            14 -> "Fantasía"
+            36 -> "Historia"
+            27 -> "Terror"
+            10402 -> "Música"
+            9648 -> "Misterio"
+            10749 -> "Romance"
+            878 -> "Ciencia ficción"
+            10770 -> "Película de TV"
+            53 -> "Thriller"
+            10752 -> "Guerra"
+            37 -> "Western"
+            else -> "Desconocido"
+        }
     }
 }
 
@@ -69,6 +95,3 @@ data class SeriesApiResponse(
     @SerializedName("results")
     val results: List<SeriesApiModel>  // Lista de series
 )
-
-// Función de extensión para compatibilidad
-fun SeriesApiModel.toDomain(): MediaItem = this.toDomain()

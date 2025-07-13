@@ -1,9 +1,9 @@
 package com.example.peliculasserieskotlin.features.home
 
-import com.example.peliculasserieskotlin.core.model.MediaItem
+import com.example.peliculasserieskotlin.core.model.Serie
 
 data class HomeUiState(
-    val mediaItems: List<MediaItem> = emptyList(),
+    val mediaItems: List<Serie> = emptyList(),
     val isLoading: Boolean = false,
     val isSearching: Boolean = false,
     val error: String? = null,

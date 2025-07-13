@@ -8,10 +8,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.example.peliculasserieskotlin.features.shared.repository.FavoriteRepository
-import com.example.peliculasserieskotlin.features.shared.repository.MediaRepository
+import com.example.peliculasserieskotlin.features.shared.repository.SerieRepository
 import com.example.peliculasserieskotlin.features.shared.repository.UserRepository
-import com.example.peliculasserieskotlin.core.model.MediaItem
-import com.example.peliculasserieskotlin.core.model.MediaType
+import com.example.peliculasserieskotlin.core.model.Serie
 import com.example.peliculasserieskotlin.core.util.NetworkUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -25,21 +24,16 @@ import com.example.peliculasserieskotlin.core.model.GenreItem
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val mediaRepository: MediaRepository,
+    private val serieRepository: SerieRepository,
     private val favoriteRepository: FavoriteRepository,
     private val userRepository: UserRepository,
     private val networkUtils: NetworkUtils
 ) : ViewModel() {
 
-    /*---------------------------  UI STATE  ---------------------------*/
-
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    enum class SortType { ALPHABETIC, RATING, FAVORITE }
-
-    private val _selectedCategory = MutableStateFlow("Películas")
-    val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
+    enum class SortType { POPULAR, RATING, FAVORITE }
 
     private val _sortBy = MutableStateFlow(SortType.RATING)
     val sortBy: StateFlow<SortType> = _sortBy.asStateFlow()
@@ -58,31 +52,20 @@ class HomeViewModel @Inject constructor(
     private val _selectedGenres = MutableStateFlow<List<GenreItem>>(emptyList())
     val selectedGenres: StateFlow<List<GenreItem>> = _selectedGenres.asStateFlow()
 
-    val pagedMediaItems: StateFlow<Flow<PagingData<MediaItem>>> = combine(
-        _selectedCategory,
+    val pagedSeries: StateFlow<Flow<PagingData<Serie>>> = combine(
         _sortBy,
         _searchQuery,
         userRepository.currentUser,
         _selectedGenres
-    ) { category, sort, query, currentUser, selectedGenres ->
-        val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
+    ) { sort, query, currentUser, selectedGenres ->
         val isGuest = currentUser == null
         val genreIds = selectedGenres.map { it.id }.filter { it != -1 }
-        
+
         if (sort == SortType.FAVORITE && !isGuest) {
             flowOf(PagingData.empty())
-        } else if (sort == SortType.FAVORITE && isGuest) {
-            _sortBy.value = SortType.RATING
-            try {
-                mediaRepository.getPagedMedia(mediaType, SortType.RATING, query, genreIds)
-                    .cachedIn(viewModelScope)
-            } catch (e: Exception) {
-                updateError(e.localizedMessage ?: "Error al cargar los datos")
-                flowOf(PagingData.empty())
-            }
         } else {
             try {
-                mediaRepository.getPagedMedia(mediaType, sort, query, genreIds)
+                serieRepository.getPagedSeries(sort, query, genreIds)
                     .cachedIn(viewModelScope)
             } catch (e: Exception) {
                 updateError(e.localizedMessage ?: "Error al cargar los datos")
@@ -95,16 +78,14 @@ class HomeViewModel @Inject constructor(
         initialValue = flowOf(PagingData.empty())
     )
 
-    val favoriteMediaItems: StateFlow<List<MediaItem>> = combine(
-        _selectedCategory,
+    val favoriteSeries: StateFlow<List<Serie>> = combine(
         _sortBy,
         userRepository.currentUser
-    ) { category, sort, currentUser ->
+    ) { sort, currentUser ->
         val isGuest = currentUser == null
         if (sort == SortType.FAVORITE && !isGuest) {
-            val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
             try {
-                favoriteRepository.getFavoriteMedia(mediaType)
+                favoriteRepository.getFavoriteSeries()
             } catch (e: Exception) {
                 updateError(e.localizedMessage ?: "Error al cargar favoritos")
                 flowOf(emptyList())
@@ -119,20 +100,13 @@ class HomeViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    val cachedMediaItems: StateFlow<List<MediaItem>> = combine(
-        _selectedCategory,
-        _selectedGenres
-    ) { category, selectedGenres ->
-        val mediaType = if (category == "Películas") MediaType.MOVIE else MediaType.SERIES
-        Pair(mediaType, selectedGenres)
-    }
-        .flatMapLatest { (mediaType, selectedGenres) ->
-            mediaRepository.getMediaFromLocalDb(mediaType).map { mediaList ->
+    val cachedSeries: StateFlow<List<Serie>> = _selectedGenres
+        .flatMapLatest { selectedGenres ->
+            serieRepository.getSeriesFromLocalDb().map { serieList ->
                 if (selectedGenres.isEmpty()) {
-                    mediaList
+                    serieList
                 } else {
-                    // Filtrar por coincidencia de al menos un género
-                    mediaList.filter { item ->
+                    serieList.filter { item ->
                         val itemGenreIds = item.genres?.map { it.id } ?: emptyList()
                         selectedGenres.any { it.id in itemGenreIds }
                     }
@@ -148,11 +122,9 @@ class HomeViewModel @Inject constructor(
     private var searchJob: Job? = null
 
     init {
-        // Observar cambios en la conectividad
         viewModelScope.launch {
             var wasOffline = false
             networkUtils.getNetworkStatusFlow().collect { isConnected ->
-                Log.d("HomeViewModel", "Network status changed: isConnected=$isConnected")
                 _uiState.update { it.copy(isOffline = !isConnected) }
                 if (isConnected && wasOffline) {
                     reloadAllData()
@@ -160,13 +132,11 @@ class HomeViewModel @Inject constructor(
                 wasOffline = !isConnected
             }
         }
-        // Timer de respaldo para asegurar actualización del estado de red
         viewModelScope.launch {
             while (true) {
                 delay(5000)
                 val isConnected = networkUtils.isNetworkAvailable()
                 if (uiState.value.isOffline == isConnected) {
-                    Log.d("HomeViewModel", "Timer backup: Corrigiendo estado de red. isConnected=$isConnected")
                     _uiState.update { it.copy(isOffline = !isConnected) }
                 }
             }
@@ -174,25 +144,22 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun reloadAllData() {
-        // Llama a los métodos necesarios para recargar datos desde la API
-        loadMediaItems()
-        // Si tienes otros datos que refrescar, agrégalos aquí
+        loadSeries()
     }
 
-    fun toggleFavorite(item: MediaItem, isFav: Boolean) = viewModelScope.launch {
-        // No permitir favoritos si es invitado
+    fun toggleFavorite(item: Serie, isFav: Boolean) = viewModelScope.launch {
         if (!userRepository.isUserLoggedIn()) return@launch
-        
+
         try {
             if (isFav) favoriteRepository.addFavorite(item)
-            else favoriteRepository.removeFavorite(item.id, item.type)
+            else favoriteRepository.removeFavorite(item.id)
         } catch (e: Exception) {
             updateError(e.localizedMessage ?: "Error al actualizar favoritos")
         }
     }
 
-    fun isFavorite(id: Int, type: MediaType): Flow<Boolean> =
-        if (!userRepository.isUserLoggedIn()) flowOf(false) else favoriteRepository.isFavorite(id, type)
+    fun isFavorite(id: Int): Flow<Boolean> =
+        if (!userRepository.isUserLoggedIn()) flowOf(false) else favoriteRepository.isFavorite(id)
 
     fun showInlineSearch() {
         _inlineSearchActive.value = true
@@ -201,97 +168,46 @@ class HomeViewModel @Inject constructor(
 
     fun hideInlineSearch() {
         _inlineSearchActive.value = false
-        _showSearchBarForced.value = false
+        searchText = ""
+        _searchQuery.value = null
     }
 
-    fun onSearchQueryChanged(query: String) {
-        searchText = query
-        _showSearchBarForced.value = query.isNotBlank()
-
+    fun onSearchTextChanged(text: String) {
+        searchText = text
         searchJob?.cancel()
-
-        if (query.isBlank()) {
-            _searchQuery.value = null
-            _uiState.update { it.copy(isSearching = false) }
-            return
-        }
-
-        _uiState.update { it.copy(isSearching = true, error = null) }
-
         searchJob = viewModelScope.launch {
-            delay(800)
-            _searchQuery.value = query
-            _uiState.update { it.copy(isSearching = false) }
+            delay(300)
+            _searchQuery.value = text
         }
     }
 
-    fun updateCategory(category: String) {
-        _selectedCategory.value = category
+    fun forceShowSearchBar() {
+        _showSearchBarForced.value = true
     }
 
-    fun setSortType(type: SortType) {
-        if (_sortBy.value == type) return
-        // No permitir cambiar a favoritos si es invitado
-        if (type == SortType.FAVORITE && !userRepository.isUserLoggedIn()) return
-        _sortBy.value = type
+    fun onSortChanged(sortType: SortType) {
+        _sortBy.value = sortType
     }
 
-    private fun updateLoading(value: Boolean) =
-        _uiState.update { it.copy(isLoading = value) }
-
-    private fun updateError(errorMsg: String?) =
-        _uiState.update { it.copy(error = errorMsg, isLoading = false, isSearching = false) }
-
-    /*----------- NAVEGACIÓN DETALLE -----------*/
-    private val _navigateToDetail = MutableSharedFlow<Pair<Int, MediaType>>()
-    val navigateToDetail = _navigateToDetail.asSharedFlow()
-
-    private val _showOfflineDetailWarning = MutableSharedFlow<Unit>()
-    val showOfflineDetailWarning = _showOfflineDetailWarning.asSharedFlow()
-
-    fun onMediaItemSelected(mediaItem: MediaItem) {
-        viewModelScope.launch {
-            if (!networkUtils.isNetworkAvailable()) {
-                // Verificar si los detalles están en caché
-                val hasDetails = mediaRepository.hasDetailsCached(mediaItem.id, mediaItem.type)
-                if (hasDetails) {
-                    _navigateToDetail.emit(mediaItem.id to mediaItem.type)
-                } else {
-                    // Mostrar advertencia de que los detalles no están disponibles offline
-                    _showOfflineDetailWarning.emit(Unit)
-                }
-            } else {
-                _navigateToDetail.emit(mediaItem.id to mediaItem.type)
-            }
+    fun onGenreSelected(genre: GenreItem) {
+        val currentSelection = _selectedGenres.value.toMutableList()
+        if (currentSelection.contains(genre)) {
+            currentSelection.remove(genre)
+        } else {
+            currentSelection.add(genre)
         }
+        _selectedGenres.value = currentSelection
     }
 
-    fun loadMediaItems() {
-        viewModelScope.launch {
-            try {
-                updateLoading(true)
-                // La carga se maneja automáticamente a través de los Flows
-                updateLoading(false)
-            } catch (e: Exception) {
-                updateError(e.localizedMessage ?: "Error desconocido")
-            }
-        }
+    private fun loadSeries() {
+        // This is a placeholder. The actual data loading is handled by the flows.
+    }
+
+    private fun updateError(message: String) {
+        _uiState.update { it.copy(error = message) }
     }
 
     fun clearError() {
-        updateError(null)
-    }
-
-    fun toggleGenreSelection(genre: GenreItem) {
-        if (genre.id == -1) {
-            // Si es el chip 'Todos', limpiar selección
-            _selectedGenres.value = emptyList()
-        } else {
-            _selectedGenres.value = if (_selectedGenres.value.contains(genre)) {
-                _selectedGenres.value - genre
-            } else {
-                _selectedGenres.value + genre
-            }
-        }
+        _uiState.update { it.copy(error = null) }
     }
 }

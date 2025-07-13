@@ -4,17 +4,15 @@ import android.content.Context
 import androidx.room.Room
 import com.example.peliculasserieskotlin.core.database.AppDatabase
 import com.example.peliculasserieskotlin.core.database.dao.FavoriteDao
-import com.example.peliculasserieskotlin.core.database.dao.MediaItemDao
-import com.example.peliculasserieskotlin.core.database.dao.MediaDetailDao
+import com.example.peliculasserieskotlin.core.database.dao.SerieDao
 import com.example.peliculasserieskotlin.core.database.dao.UserDao
 import com.example.peliculasserieskotlin.core.util.NetworkUtils
-import com.example.peliculasserieskotlin.data.MovieApiService
 import com.example.peliculasserieskotlin.data.SeriesApiService
-import com.example.peliculasserieskotlin.features.shared.repository.ApiMediaRepository
+import com.example.peliculasserieskotlin.features.shared.repository.ApiSerieRepository
 import com.example.peliculasserieskotlin.features.shared.repository.FavoriteRepository
-import com.example.peliculasserieskotlin.features.shared.repository.MediaRepository
-import com.example.peliculasserieskotlin.features.shared.repository.RoomMediaRepository
-import com.example.peliculasserieskotlin.features.shared.repository.SmartMediaRepository
+import com.example.peliculasserieskotlin.features.shared.repository.RoomSerieRepository
+import com.example.peliculasserieskotlin.features.shared.repository.SerieRepository
+import com.example.peliculasserieskotlin.features.shared.repository.SmartSerieRepository
 import com.example.peliculasserieskotlin.features.shared.repository.UserRepository
 import dagger.Module
 import dagger.Provides
@@ -55,10 +53,6 @@ object AppModule {
     /*----------------- API services -----------------*/
 
     @Provides @Singleton
-    fun provideMovieApiService(retrofit: Retrofit): MovieApiService =
-        retrofit.create(MovieApiService::class.java)
-
-    @Provides @Singleton
     fun provideSeriesApiService(retrofit: Retrofit): SeriesApiService =
         retrofit.create(SeriesApiService::class.java)
 
@@ -67,13 +61,14 @@ object AppModule {
     @Provides @Singleton
     fun provideDatabase(@ApplicationContext ctx: Context): AppDatabase =
         Room.databaseBuilder(ctx, AppDatabase::class.java, "media_database")
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigrationOnDowngrade()
             .build()
 
-    @Provides fun provideMediaItemDao(db: AppDatabase): MediaItemDao = db.mediaItemDao()
+    @Provides fun provideSerieDao(db: AppDatabase): SerieDao = db.serieDao()
     @Provides fun provideFavoriteDao(db: AppDatabase): FavoriteDao = db.favoriteDao()
-    @Provides fun provideMediaDetailDao(db: AppDatabase): MediaDetailDao = db.mediaDetailDao()
     @Provides fun provideUserDao(db: AppDatabase): UserDao = db.userDao()
+    //todo
+    // @Provides fun provideSerieDetailDao(db: AppDatabase): SerieDetailDao = db.serieDetailDao()
 
     /*----------------- Utils -----------------*/
 
@@ -82,44 +77,48 @@ object AppModule {
 
     /*----------------- Repositories -----------------*/
 
-    @Provides @Singleton
-    fun provideApiMediaRepository(
-        movieApi: MovieApiService,
+    @Provides
+    @Singleton
+    fun provideApiSerieRepository(
         seriesApi: SeriesApiService,
         @ApplicationContext ctx: Context,
-        roomRepository: RoomMediaRepository
-    ): ApiMediaRepository = ApiMediaRepository(movieApi, seriesApi, ctx, roomRepository)
+        roomRepo: RoomSerieRepository
+    ): ApiSerieRepository = ApiSerieRepository(
+        seriesApi, ctx,
+        roomRepository = roomRepo
+    )
 
-    @Provides @Singleton
-    fun provideRoomMediaRepository(
-        mediaItemDao: MediaItemDao, 
+    @Provides
+    @Singleton
+    fun provideRoomSerieRepository(
+        serieDao: SerieDao,
         favoriteDao: FavoriteDao,
-        mediaDetailDao: MediaDetailDao,
         userRepository: UserRepository
-    ): RoomMediaRepository = RoomMediaRepository(mediaItemDao, favoriteDao, mediaDetailDao, userRepository)
+    ): RoomSerieRepository = RoomSerieRepository(serieDao, favoriteDao, userRepository)
 
-    @Provides @Singleton
-    fun provideSmartMediaRepository(
-        apiRepo: ApiMediaRepository,
-        roomRepo: RoomMediaRepository,
+    @Provides
+    @Singleton
+    fun provideSerieRepository(
+        apiRepo: ApiSerieRepository,
+        roomRepo: RoomSerieRepository,
         networkUtils: NetworkUtils,
-        movieApiService: MovieApiService,
         seriesApiService: SeriesApiService,
         @ApplicationContext context: Context
-    ): SmartMediaRepository = SmartMediaRepository(apiRepo, roomRepo, networkUtils, movieApiService, seriesApiService, context)
-
-    @Provides @Singleton
-    fun provideMediaRepository(
-        smartRepo: SmartMediaRepository
-    ): MediaRepository = smartRepo
+    ): SerieRepository = SmartSerieRepository(
+        apiRepo,
+        roomRepo,
+        networkUtils,
+        seriesApiService,
+        context
+    )
 
     @Provides @Singleton
     fun provideFavoriteRepository(
         favoriteDao: FavoriteDao,
-        mediaItemDao: MediaItemDao,
+        serieDao: SerieDao,
         userRepository: UserRepository
     ): FavoriteRepository =
-        FavoriteRepository(favoriteDao, mediaItemDao, userRepository)
+        FavoriteRepository(favoriteDao, serieDao, userRepository)
 
     @Provides
     @Singleton

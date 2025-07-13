@@ -43,8 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.peliculasserieskotlin.core.model.MediaItem
-import com.example.peliculasserieskotlin.core.model.MediaType
+import com.example.peliculasserieskotlin.core.model.Serie
 import com.example.peliculasserieskotlin.features.shared.components.rememberFavoriteState
 import android.util.Log
 
@@ -54,20 +53,20 @@ import android.util.Log
  */
 @Composable
 fun MediaCard(
-    mediaItem: MediaItem,
+    serie: Serie,
     isFavorite: Boolean = false,
-    onFavoriteClick: ((mediaItem: MediaItem, isFavorite: Boolean) -> Unit)? = null,
-    onItemClick: ((mediaItem: MediaItem) -> Unit)? = null,
+    onFavoriteClick: ((serie: Serie, isFavorite: Boolean) -> Unit)? = null,
+    onItemClick: ((serie: Serie) -> Unit)? = null,
     style: MediaCardStyle = MediaCardStyle.GRID,
     showRating: Boolean = true,
     showTitle: Boolean = true,
     showFavoriteIcon: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    Log.d("DEBUG", "[MediaCard] showFavoriteIcon: $showFavoriteIcon, item: ${mediaItem.title}")
+    Log.d("DEBUG", "[MediaCard] showFavoriteIcon: $showFavoriteIcon, item: ${serie.title}")
     when (style) {
         MediaCardStyle.GRID -> GridMediaCard(
-            mediaItem = mediaItem,
+            serie = serie,
             isFavorite = isFavorite,
             onFavoriteClick = onFavoriteClick,
             onItemClick = onItemClick,
@@ -77,7 +76,7 @@ fun MediaCard(
             modifier = modifier
         )
         MediaCardStyle.ROW -> RowMediaCard(
-            mediaItem = mediaItem,
+            serie = serie,
             isFavorite = isFavorite,
             onFavoriteClick = onFavoriteClick,
             onItemClick = onItemClick,
@@ -86,7 +85,7 @@ fun MediaCard(
             modifier = modifier
         )
         MediaCardStyle.COMPACT -> CompactMediaCard(
-            mediaItem = mediaItem,
+            serie = serie,
             onItemClick = onItemClick,
             modifier = modifier
         )
@@ -96,17 +95,17 @@ fun MediaCard(
 @SuppressLint("DefaultLocale")
 @Composable
 private fun GridMediaCard(
-    mediaItem: MediaItem,
+    serie: Serie,
     isFavorite: Boolean,
-    onFavoriteClick: ((mediaItem: MediaItem, isFavorite: Boolean) -> Unit)?,
-    onItemClick: ((mediaItem: MediaItem) -> Unit)?,
+    onFavoriteClick: ((serie: Serie, isFavorite: Boolean) -> Unit)?,
+    onItemClick: ((serie: Serie) -> Unit)?,
     showRating: Boolean,
     showTitle: Boolean,
     showFavoriteIcon: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val (localFavorite, toggleFavorite) = rememberFavoriteState(
-        mediaItem = mediaItem,
+        mediaItem = serie,
         isFavorite = isFavorite,
         onFavoriteToggle = { item, fav -> onFavoriteClick?.invoke(item, fav) }
     )
@@ -120,7 +119,7 @@ private fun GridMediaCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(240.dp)
-                .clickable { onItemClick?.invoke(mediaItem) },
+                .clickable { onItemClick?.invoke(serie) },
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
@@ -128,8 +127,8 @@ private fun GridMediaCard(
                 modifier = Modifier.fillMaxSize()
             ) {
                 AsyncImage(
-                    model = mediaItem.posterUrl,
-                    contentDescription = "Poster of ${mediaItem.title}",
+                    model = serie.posterUrl,
+                    contentDescription = "Poster of ${serie.title}",
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(12.dp)),
@@ -151,7 +150,7 @@ private fun GridMediaCard(
                 ) {
                     if (showRating) {
                         Text(
-                            text = "⭐ ${String.format("%.1f", mediaItem.voteAverage)}",
+                            text = "⭐ ${String.format("%.1f", serie.voteAverage)}",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.bodySmall
@@ -178,7 +177,7 @@ private fun GridMediaCard(
                         .align(Alignment.BottomStart)
                         .padding(start = 8.dp, bottom = 8.dp)
                 ) {
-                    mediaItem.genres?.take(2)?.forEachIndexed { idx, genre ->
+                    serie.genres?.take(2)?.forEachIndexed { idx, genre ->
                         Box(
                             modifier = Modifier
                                 .background(
@@ -202,7 +201,7 @@ private fun GridMediaCard(
 
         if (showTitle) {
             Text(
-                text = mediaItem.title,
+                text = serie.title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,
@@ -216,16 +215,16 @@ private fun GridMediaCard(
 @SuppressLint("DefaultLocale")
 @Composable
 private fun RowMediaCard(
-    mediaItem: MediaItem,
+    serie: Serie,
     isFavorite: Boolean,
-    onFavoriteClick: ((mediaItem: MediaItem, isFavorite: Boolean) -> Unit)?,
-    onItemClick: ((mediaItem: MediaItem) -> Unit)?,
+    onFavoriteClick: ((serie: Serie, isFavorite: Boolean) -> Unit)?,
+    onItemClick: ((serie: Serie) -> Unit)?,
     showRating: Boolean,
     showFavoriteIcon: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val (localFavorite, toggleFavorite) = rememberFavoriteState(
-        mediaItem = mediaItem,
+        mediaItem = serie,
         isFavorite = isFavorite,
         onFavoriteToggle = { item, fav -> onFavoriteClick?.invoke(item, fav) }
     )
@@ -235,18 +234,18 @@ private fun RowMediaCard(
             .fillMaxWidth()
             .height(120.dp)
             .padding(vertical = 4.dp)
-            .clickable { onItemClick?.invoke(mediaItem) },
+            .clickable { onItemClick?.invoke(serie) },
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             // Poster
             AsyncImage(
-                model = mediaItem.posterUrl,
-                contentDescription = "Poster of ${mediaItem.title}",
+                model = serie.posterUrl,
+                contentDescription = "Poster of ${serie.title}",
                 modifier = Modifier
-                    .width(80.dp)
-                    .fillMaxHeight(),
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop
             )
             
@@ -258,7 +257,7 @@ private fun RowMediaCard(
                     .padding(8.dp),
             ) {
                 Text(
-                    text = mediaItem.title,
+                    text = serie.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
@@ -266,7 +265,7 @@ private fun RowMediaCard(
                 )
                 
                 Text(
-                    text = mediaItem.overview,
+                    text = serie.overview,
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -279,13 +278,13 @@ private fun RowMediaCard(
                 ) {
                     if (showRating) {
                         Text(
-                            text = "⭐ ${String.format("%.1f", mediaItem.voteAverage)}",
+                            text = "⭐ ${String.format("%.1f", serie.voteAverage)}",
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
                     // Etiquetas de géneros (máximo 2)
                     Row {
-                        mediaItem.genres?.take(2)?.forEachIndexed { idx, genre ->
+                        serie.genres?.take(2)?.forEachIndexed { idx, genre ->
                             Box(
                                 modifier = Modifier
                                     .background(
@@ -331,8 +330,8 @@ private fun RowMediaCard(
 
 @Composable
 private fun CompactMediaCard(
-    mediaItem: MediaItem,
-    onItemClick: ((mediaItem: MediaItem) -> Unit)?,
+    serie: Serie,
+    onItemClick: ((serie: Serie) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -340,13 +339,13 @@ private fun CompactMediaCard(
             .width(100.dp)
             .height(150.dp)
             .padding(4.dp)
-            .clickable { onItemClick?.invoke(mediaItem) },
+            .clickable { onItemClick?.invoke(serie) },
         shape = RoundedCornerShape(8.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
-                model = mediaItem.posterUrl,
-                contentDescription = "Poster of ${mediaItem.title}",
+                model = serie.posterUrl,
+                contentDescription = "Poster of ${serie.title}",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -356,7 +355,7 @@ private fun CompactMediaCard(
                     .align(Alignment.TopStart)
                     .padding(start = 4.dp, top = 4.dp)
             ) {
-                mediaItem.genres?.take(2)?.forEachIndexed { idx, genre ->
+                serie.genres?.take(2)?.forEachIndexed { idx, genre ->
                     Box(
                         modifier = Modifier
                             .background(
@@ -384,7 +383,7 @@ private fun CompactMediaCard(
                     .padding(4.dp)
             ) {
                 Text(
-                    text = mediaItem.title,
+                    text = serie.title,
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White,
                     maxLines = 2,

@@ -3,11 +3,10 @@ package com.example.peliculasserieskotlin.core.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.peliculasserieskotlin.core.database.dao.FavoriteDao
-import com.example.peliculasserieskotlin.core.database.dao.MediaDetailDao
-import com.example.peliculasserieskotlin.core.database.dao.MediaItemDao
+import com.example.peliculasserieskotlin.core.database.dao.SerieDao
 import com.example.peliculasserieskotlin.core.database.entity.FavoriteEntity
-import com.example.peliculasserieskotlin.core.database.entity.MediaDetailEntity
-import com.example.peliculasserieskotlin.core.database.entity.MediaItemEntity
+import com.example.peliculasserieskotlin.core.database.entity.SerieEntity
+import com.example.peliculasserieskotlin.core.database.entity.SerieDetailEntity
 import com.example.peliculasserieskotlin.core.database.entity.UserEntity
 import com.example.peliculasserieskotlin.core.database.dao.UserDao
 
@@ -17,17 +16,16 @@ import com.example.peliculasserieskotlin.core.database.dao.UserDao
  */
 @Database(
     entities = [
-        MediaItemEntity::class,
+        SerieEntity::class,
         FavoriteEntity::class,
-        MediaDetailEntity::class,
+        SerieDetailEntity::class,
         UserEntity::class
     ], 
-    version = 6, 
+    version = 7, // Incrementa la versión de la base de datos
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun mediaItemDao(): MediaItemDao
+    abstract fun serieDao(): SerieDao
     abstract fun favoriteDao(): FavoriteDao
-    abstract fun mediaDetailDao(): MediaDetailDao
     abstract fun userDao(): UserDao
 }

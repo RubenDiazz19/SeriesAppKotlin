@@ -17,8 +17,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.peliculasserieskotlin.core.model.MediaType
-import com.example.peliculasserieskotlin.features.details.MediaDetailViewModel
+import com.example.peliculasserieskotlin.features.details.SerieDetailViewModel
+import com.example.peliculasserieskotlin.features.details.SerieDetailScreen
 import com.example.peliculasserieskotlin.features.home.HomeScreen
 import com.example.peliculasserieskotlin.features.home.HomeViewModel
 import com.example.peliculasserieskotlin.ui.theme.PeliculasSeriesKotlinTheme
@@ -31,7 +31,7 @@ import com.example.peliculasserieskotlin.features.auth.AuthViewModel
 class MainActivity : ComponentActivity() {
 
     private val homeViewModel: HomeViewModel by viewModels()
-    private val detailViewModel: MediaDetailViewModel by viewModels()
+    private val detailViewModel: SerieDetailViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigator(
     homeViewModel: HomeViewModel,
-    detailViewModel: MediaDetailViewModel,
+    detailViewModel: SerieDetailViewModel,
     authViewModel: AuthViewModel
 ) {
     val navController = rememberNavController()
@@ -93,31 +93,25 @@ fun AppNavigator(
                 composable("home") {
                     HomeScreen(
                         viewModel = homeViewModel,
-                        onNavigateToDetail = { id, type ->
-                            navController.navigate("detail/${type.name.lowercase()}/$id")
+                        onNavigateToDetail = { id ->
+                            navController.navigate("detail/$id")
                         }
                     )
                 }
                 composable(
-                    route = "detail/{type}/{id}",
+                    route = "detail/{id}",
                     arguments = listOf(
-                        navArgument("type") { type = NavType.StringType },
-                        navArgument("id")   { type = NavType.IntType }
+                        navArgument("id") { type = NavType.IntType }
                     )
                 ) { backStackEntry ->
                     val id = backStackEntry.arguments!!.getInt("id")
-                    val type = MediaType.valueOf(
-                        backStackEntry.arguments!!.getString("type")!!.uppercase()
-                    )
-                    detailViewModel.loadDetail(id, type)
+                    detailViewModel.loadDetail(id)
                     val detailState by detailViewModel.uiState.collectAsState()
                     if (detailState != null) {
-                        com.example.peliculasserieskotlin.features.details.MediaDetailScreen(
-                            mediaId = id,
-                            type = type,
-                            isGuest = isGuest,
-                            viewModel = detailViewModel,
-                            onBack = { navController.popBackStack() }
+                        SerieDetailScreen(
+                            serieId = id,
+                            onBackClick = { navController.popBackStack() },
+                            viewModel = detailViewModel
                         )
                     }
                 }

@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">PeliculasSeriesKotlin</string>
+    <string name="app_name">SeriesAppKotlin</string>
     <string name="apiKey">fca0c331c37cedb20821793431ab1389</string>
 </resources>
