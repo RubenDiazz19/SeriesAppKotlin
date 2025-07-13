@@ -7,6 +7,8 @@ import com.example.seriesappkotlin.core.database.dao.FavoriteDao
 import com.example.seriesappkotlin.core.database.dao.SerieDao
 import com.example.seriesappkotlin.core.database.dao.UserDao
 import com.example.seriesappkotlin.core.database.dao.WatchedDao
+import com.example.seriesappkotlin.core.database.dao.WatchedEpisodeDao
+import com.example.seriesappkotlin.core.database.dao.WatchedSeasonDao
 import com.example.seriesappkotlin.core.util.NetworkUtils
 import com.example.seriesappkotlin.data.SeriesApiService
 import com.example.seriesappkotlin.features.shared.repository.ApiSerieRepository
@@ -58,11 +60,16 @@ object AppModule {
 
     /*----------------- Room -----------------*/
 
-    @Provides @Singleton
+    @Provides
+    @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return Room.databaseBuilder(context, AppDatabase::class.java, "media_database")
-            .fallbackToDestructiveMigration()
-            .build()
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "series_database"
+        )
+        .fallbackToDestructiveMigration() // Para desarrollo - eliminar en producción
+        .build()
     }
 
     @Provides
@@ -112,5 +119,15 @@ object AppModule {
         @ApplicationContext context: Context
     ): SmartSerieRepository {
         return SmartSerieRepository(apiSerieRepository, roomSerieRepository, networkUtils, seriesApiService, context)
+    }
+
+    @Provides
+    fun provideWatchedSeasonDao(appDatabase: AppDatabase): WatchedSeasonDao {
+        return appDatabase.watchedSeasonDao()
+    }
+
+    @Provides
+    fun provideWatchedEpisodeDao(appDatabase: AppDatabase): WatchedEpisodeDao {
+        return appDatabase.watchedEpisodeDao()
     }
 }

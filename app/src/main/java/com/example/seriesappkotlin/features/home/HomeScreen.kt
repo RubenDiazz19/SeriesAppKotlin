@@ -36,8 +36,9 @@ import com.example.seriesappkotlin.core.model.SUPPORTED_GENRES
 import com.example.seriesappkotlin.core.model.Serie
 import com.example.seriesappkotlin.features.auth.AuthViewModel
 import com.example.seriesappkotlin.features.favorites.FavoriteViewModel
+import com.example.seriesappkotlin.features.favorites.WatchedViewModel
 import com.example.seriesappkotlin.features.shared.components.*
-import kotlinx.coroutines.Dispatchers
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +46,8 @@ fun HomeScreen(
     onNavigateToDetail: (Int) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
-    favoriteViewModel: FavoriteViewModel = hiltViewModel()
+    favoriteViewModel: FavoriteViewModel = hiltViewModel(),
+    watchedViewModel: WatchedViewModel = hiltViewModel() // Agregar WatchedViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
@@ -161,6 +163,7 @@ fun HomeScreen(
                         items = favoriteSeries,
                         listState = listState,
                         favoriteViewModel = favoriteViewModel,
+                        watchedViewModel = watchedViewModel, // Agregar watchedViewModel
                         isGuest = isGuest,
                         onNavigateToDetail = onNavigateToDetail
                     )
@@ -170,6 +173,7 @@ fun HomeScreen(
                         items = cachedSeries,
                         listState = listState,
                         favoriteViewModel = favoriteViewModel,
+                        watchedViewModel = watchedViewModel, // Agregar watchedViewModel
                         isGuest = isGuest,
                         onNavigateToDetail = onNavigateToDetail
                     )
@@ -179,6 +183,7 @@ fun HomeScreen(
                         pagedItems = pagedItems,
                         listState = listState,
                         favoriteViewModel = favoriteViewModel,
+                        watchedViewModel = watchedViewModel, // Agregar watchedViewModel
                         isGuest = isGuest,
                         onNavigateToDetail = onNavigateToDetail
                     )
@@ -424,6 +429,7 @@ private fun ModernSeriesGrid(
     items: List<Serie>,
     listState: LazyGridState,
     favoriteViewModel: FavoriteViewModel,
+    watchedViewModel: WatchedViewModel, // Agregar parámetro
     isGuest: Boolean,
     onNavigateToDetail: (Int) -> Unit
 ) {
@@ -446,22 +452,31 @@ private fun ModernSeriesGrid(
             ) { item ->
                 if (!isGuest) {
                     val isFavorite by favoriteViewModel.isFavorite(item.id).collectAsState(initial = false)
+                    val isWatched by watchedViewModel.isWatched(item.id).collectAsState(initial = false) // Agregar estado watched
                     ModernMediaCard(
                         serie = item,
                         isFavorite = isFavorite,
+                        isWatched = isWatched, // Pasar estado watched
                         onFavoriteClick = { serie, newFavoriteState -> 
                             favoriteViewModel.toggleFavorite(serie, newFavoriteState) 
                         },
+                        onWatchedClick = { serie, newWatchedState -> // Agregar callback watched
+                            watchedViewModel.toggleWatched(serie, newWatchedState)
+                        },
                         onItemClick = { onNavigateToDetail(it.id) },
-                        showFavoriteIcon = true
+                        showFavoriteIcon = true,
+                        showWatchedIcon = true // Agregar parámetro para mostrar icono watched
                     )
                 } else {
                     ModernMediaCard(
                         serie = item,
                         isFavorite = false,
+                        isWatched = false, // Agregar parámetro
                         onFavoriteClick = null,
+                        onWatchedClick = null, // Agregar parámetro
                         onItemClick = { onNavigateToDetail(it.id) },
-                        showFavoriteIcon = false
+                        showFavoriteIcon = false,
+                        showWatchedIcon = false // No mostrar para invitados
                     )
                 }
             }
@@ -474,6 +489,7 @@ private fun ModernPaginatedGrid(
     pagedItems: LazyPagingItems<Serie>,
     listState: LazyGridState,
     favoriteViewModel: FavoriteViewModel,
+    watchedViewModel: WatchedViewModel, // Agregar parámetro
     isGuest: Boolean,
     onNavigateToDetail: (Int) -> Unit
 ) {
@@ -495,27 +511,35 @@ private fun ModernPaginatedGrid(
             if (item != null) {
                 if (!isGuest) {
                     val isFavorite by favoriteViewModel.isFavorite(item.id).collectAsState(initial = false)
+                    val isWatched by watchedViewModel.isWatched(item.id).collectAsState(initial = false) // Agregar estado watched
                     ModernMediaCard(
                         serie = item,
                         isFavorite = isFavorite,
+                        isWatched = isWatched, // Pasar estado watched
                         onFavoriteClick = { serie, newFavoriteState -> 
                             favoriteViewModel.toggleFavorite(serie, newFavoriteState) 
                         },
+                        onWatchedClick = { serie, newWatchedState -> // Agregar callback watched
+                            watchedViewModel.toggleWatched(serie, newWatchedState)
+                        },
                         onItemClick = { onNavigateToDetail(item.id) },
-                        showFavoriteIcon = true
+                        showFavoriteIcon = true,
+                        showWatchedIcon = true // Agregar parámetro para mostrar icono watched
                     )
                 } else {
                     ModernMediaCard(
                         serie = item,
                         isFavorite = false,
+                        isWatched = false, // Agregar parámetro
                         onFavoriteClick = null,
+                        onWatchedClick = null, // Agregar parámetro
                         onItemClick = { onNavigateToDetail(item.id) },
-                        showFavoriteIcon = false
+                        showFavoriteIcon = false,
+                        showWatchedIcon = false // No mostrar para invitados
                     )
                 }
             }
         }
-        
         // Handle loading states
         pagedItems.apply {
             when {

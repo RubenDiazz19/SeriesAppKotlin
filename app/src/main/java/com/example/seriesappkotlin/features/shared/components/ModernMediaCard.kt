@@ -7,8 +7,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.filled.CheckCircle // Cambiar import
+import androidx.compose.material.icons.outlined.CheckCircle // Cambiar import
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,9 +27,12 @@ import com.example.seriesappkotlin.core.model.Serie
 fun ModernMediaCard(
     serie: Serie,
     isFavorite: Boolean = false,
+    isWatched: Boolean = false, // Agregar parámetro
     onFavoriteClick: ((serie: Serie, isFavorite: Boolean) -> Unit)? = null,
+    onWatchedClick: ((serie: Serie, isWatched: Boolean) -> Unit)? = null, // Agregar parámetro
     onItemClick: ((serie: Serie) -> Unit)? = null,
     showFavoriteIcon: Boolean = true,
+    showWatchedIcon: Boolean = true, // Agregar parámetro
     modifier: Modifier = Modifier
 ) {
     val (localFavorite, toggleFavorite) = rememberFavoriteState(
@@ -37,6 +40,20 @@ fun ModernMediaCard(
         isFavorite = isFavorite,
         onFavoriteToggle = { item, fav -> onFavoriteClick?.invoke(item, fav) }
     )
+    
+    // Agregar estado local para watched
+    var localWatched by remember { mutableStateOf(isWatched) }
+    
+    // Sincronizar estado local con prop
+    LaunchedEffect(isWatched) {
+        localWatched = isWatched
+    }
+    
+    val toggleWatched: () -> Unit = {
+        val newWatchedState = !localWatched
+        localWatched = newWatchedState
+        onWatchedClick?.invoke(serie, newWatchedState)
+    }
 
     Card(
         modifier = modifier
@@ -62,7 +79,7 @@ fun ModernMediaCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.20f))
+                    .background(Color.Black.copy(alpha = 0.35f))
             )
 
             // Overlay gradient for better text visibility
@@ -92,21 +109,41 @@ fun ModernMediaCard(
                     .padding(8.dp)
             )
             
-            // Favorite icon in top-right corner
-            if (showFavoriteIcon && onFavoriteClick != null) {
-                IconButton(
-                    onClick = toggleFavorite,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = if (localFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = if (localFavorite) "Quitar de favoritos" else "Añadir a favoritos",
-                        tint = if (localFavorite) Color.Red else Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
+            // Iconos en la esquina superior derecha
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Icono de favorito (primero)
+                if (showFavoriteIcon && onFavoriteClick != null) {
+                    IconButton(
+                        onClick = toggleFavorite,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (localFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = if (localFavorite) "Quitar de favoritos" else "Añadir a favoritos",
+                            tint = if (localFavorite) Color.Red else Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                
+                // Icono de visto (segundo)
+                if (showWatchedIcon && onWatchedClick != null) {
+                    IconButton(
+                        onClick = toggleWatched,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (localWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+                            contentDescription = if (localWatched) "Marcar como no vista" else "Marcar como vista",
+                            tint = if (localWatched) Color(0xFFFFD700) else Color.White, // Amarillo cuando está marcada
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 

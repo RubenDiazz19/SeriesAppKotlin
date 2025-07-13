@@ -26,4 +26,26 @@ class WatchedViewModel @Inject constructor(
 
     fun watchedSeries(): Flow<List<Serie>> =
         watchedRepository.getWatchedSeries()
+
+    // Métodos para temporadas
+    fun toggleWatchedSeason(serieId: Int, seasonNumber: Int, markedAsWatched: Boolean) = viewModelScope.launch {
+        if (markedAsWatched)
+            watchedRepository.addWatchedSeason(serieId, seasonNumber)
+        else
+            watchedRepository.removeWatchedSeason(serieId, seasonNumber)
+    }
+
+    fun isSeasonWatched(serieId: Int, seasonNumber: Int): Flow<Boolean> =
+        watchedRepository.isSeasonWatched(serieId, seasonNumber)
+        
+    // Métodos para episodios
+    fun toggleWatchedEpisode(serieId: Int, seasonNumber: Int, episodeNumber: Int, markedAsWatched: Boolean) = viewModelScope.launch {
+        if (markedAsWatched)
+            watchedRepository.addWatchedEpisode(serieId, seasonNumber, episodeNumber)
+        else
+            watchedRepository.removeWatchedEpisode(serieId, seasonNumber, episodeNumber)
+    }
+
+    fun isEpisodeWatched(serieId: Int, seasonNumber: Int, episodeNumber: Int): Flow<Boolean> =
+        watchedRepository.isEpisodeWatched(serieId, seasonNumber, episodeNumber)
 }

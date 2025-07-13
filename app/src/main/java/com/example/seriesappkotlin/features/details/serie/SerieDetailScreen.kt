@@ -11,7 +11,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +35,7 @@ import coil.request.ImageRequest
 import com.example.seriesappkotlin.core.model.Season
 import com.example.seriesappkotlin.core.model.Serie
 import com.example.seriesappkotlin.features.favorites.FavoriteViewModel
+import com.example.seriesappkotlin.features.favorites.WatchedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +44,8 @@ fun SerieDetailScreen(
     onBackClick: () -> Unit,
     onSeasonClick: (Int, Int) -> Unit, // Modified to pass serieId and seasonNumber
     viewModel: SerieDetailViewModel = hiltViewModel(),
-    favoriteViewModel: FavoriteViewModel = hiltViewModel()
+    favoriteViewModel: FavoriteViewModel = hiltViewModel(),
+    watchedViewModel: WatchedViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -65,11 +69,90 @@ fun SerieDetailScreen(
             } else {
                 SerieDetailContent(
                     uiState = state,
-                    onSeasonClick = { seasonNumber ->
-                        onSeasonClick(serieId, seasonNumber)
-                    }
+                    serieId = serieId,
+                    favoriteViewModel = favoriteViewModel,
+                    watchedViewModel = watchedViewModel,
+                    onSeasonClick = onSeasonClick
                 )
             }
+            
+            // Mover TopAppBar DENTRO del bloque where 'state' está disponible
+            TopAppBar(
+                title = { /* No title here */ },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                    }
+                },
+                actions = {
+                    val isUserLoggedIn = favoriteViewModel.isUserLoggedIn()
+                    
+                    if (isUserLoggedIn) {
+                        // Botón de favoritos
+                        val isFavorite by favoriteViewModel.isFavorite(serieId).collectAsState(initial = false)
+                        IconButton(onClick = { 
+                            val serie = Serie(
+                                id = serieId,
+                                title = state.title ?: "",
+                                overview = state.overview ?: "",
+                                posterUrl = state.posterUrl ?: "",
+                                backdropUrl = null,
+                                voteAverage = 0.0,
+                                genres = state.genres,
+                                seasons = emptyList(),
+                                originalTitle = state.originalTitle,
+                                firstAirDate = state.releaseDate,
+                                voteCount = null,
+                                runtime = null,
+                                numberOfSeasons = state.numberOfSeasons,
+                                numberOfEpisodes = state.numberOfEpisodes,
+                                status = state.status,
+                                tagline = state.tagline
+                            )
+                            favoriteViewModel.toggleFavorite(serie, !isFavorite) 
+                        }) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                contentDescription = if (isFavorite) "Quitar de favoritos" else "Añadir a favoritos",
+                                tint = if (isFavorite) Color.Red else Color.White
+                            )
+                        }
+                        
+                        // Botón de visto
+                        val isWatched by watchedViewModel.isWatched(serieId).collectAsState(initial = false)
+                        IconButton(onClick = { 
+                            val serie = Serie(
+                                id = serieId,
+                                title = state.title ?: "",
+                                overview = state.overview ?: "",
+                                posterUrl = state.posterUrl ?: "",
+                                backdropUrl = null,
+                                voteAverage = 0.0,
+                                genres = state.genres,
+                                seasons = emptyList(),
+                                originalTitle = state.originalTitle,
+                                firstAirDate = state.releaseDate,
+                                voteCount = null,
+                                runtime = null,
+                                numberOfSeasons = state.numberOfSeasons,
+                                numberOfEpisodes = state.numberOfEpisodes,
+                                status = state.status,
+                                tagline = state.tagline
+                            )
+                            watchedViewModel.toggleWatched(serie, !isWatched) 
+                        }) {
+                            Icon(
+                                imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+                                contentDescription = if (isWatched) "Marcar como no vista" else "Marcar como vista",
+                                tint = if (isWatched) Color(0xFFFFD700) else Color.White
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
+            )
         } ?: run {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -77,61 +160,30 @@ fun SerieDetailScreen(
             ) {
                 CircularProgressIndicator()
             }
-        }
-
-        // Top bar con botones de navegación y favoritos
-        TopAppBar(
-            title = { /* No title here */ },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
-                }
-            },
-            actions = {
-                val isUserLoggedIn = favoriteViewModel.isUserLoggedIn()
-                
-                if (isUserLoggedIn) {
-                    val isFavorite by favoriteViewModel.isFavorite(serieId).collectAsState(initial = false)
-                    IconButton(onClick = { 
-                        val serie = Serie(
-                            id = serieId,
-                            title = uiState?.title ?: "",
-                            overview = uiState?.overview ?: "",
-                            posterUrl = uiState?.posterUrl ?: "",
-                            backdropUrl = null,
-                            voteAverage = 0.0,
-                            genres = uiState?.genres,
-                            seasons = emptyList(),
-                            originalTitle = uiState?.originalTitle,
-                            firstAirDate = uiState?.releaseDate,
-                            voteCount = null,
-                            runtime = null,
-                            numberOfSeasons = uiState?.numberOfSeasons,
-                            numberOfEpisodes = uiState?.numberOfEpisodes,
-                            status = uiState?.status,
-                            tagline = uiState?.tagline
-                        )
-                        favoriteViewModel.toggleFavorite(serie, !isFavorite) 
-                    }) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = if (isFavorite) "Quitar de favoritos" else "Añadir a favoritos",
-                            tint = if (isFavorite) Color.Red else Color.White
-                        )
+            
+            // TopAppBar básico cuando no hay estado
+            TopAppBar(
+                title = { /* No title here */ },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
                     }
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
             )
-        )
+        }
     }
 }
 
 @Composable
 private fun SerieDetailContent(
     uiState: SerieDetailUiState,
-    onSeasonClick: (Int) -> Unit,
+    serieId: Int,
+    favoriteViewModel: FavoriteViewModel,
+    watchedViewModel: WatchedViewModel,
+    onSeasonClick: (Int, Int) -> Unit, // Cambiar para recibir serieId y seasonNumber
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -277,7 +329,16 @@ private fun SerieDetailContent(
             uiState.seasons?.let { seasons ->
                 if (seasons.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    SeasonsSection(seasons = seasons, onSeasonClick = onSeasonClick)
+                    // Llamada corregida a SeasonsSection
+                    SeasonsSection(
+                        seasons = uiState.seasons ?: emptyList(),
+                        serieId = serieId,
+                        favoriteViewModel = favoriteViewModel,
+                        watchedViewModel = watchedViewModel,
+                        onSeasonClick = { seasonNumber ->
+                            onSeasonClick(serieId, seasonNumber) // Pasar ambos parámetros
+                        }
+                    )
                 }
             }
         }
@@ -319,6 +380,9 @@ private fun InfoPill(
 @Composable
 private fun SeasonsSection(
     seasons: List<Season>,
+    serieId: Int,
+    favoriteViewModel: FavoriteViewModel,
+    watchedViewModel: WatchedViewModel,
     onSeasonClick: (Int) -> Unit
 ) {
     Column {
@@ -333,7 +397,14 @@ private fun SeasonsSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(seasons) { season ->
-                SeasonCard(season = season, onClick = { onSeasonClick(season.seasonNumber) }) // Pass seasonNumber instead of id
+                SeasonCard(
+                    season = season,
+                    serieId = serieId,
+                    favoriteViewModel = favoriteViewModel,
+                    watchedViewModel = watchedViewModel,
+                    // Cambiar esta línea para pasar el serieId también
+                    onClick = { onSeasonClick(season.seasonNumber) }
+                )
             }
         }
     }
@@ -343,47 +414,75 @@ private fun SeasonsSection(
 @Composable
 private fun SeasonCard(
     season: Season,
+    serieId: Int,
+    favoriteViewModel: FavoriteViewModel,
+    watchedViewModel: WatchedViewModel,
     onClick: () -> Unit
 ) {
+    val isWatched by watchedViewModel.isSeasonWatched(serieId, season.seasonNumber).collectAsState(initial = false)
+
     Card(
         onClick = onClick,
         modifier = Modifier
             .width(120.dp)
-            .height(240.dp),
+            .wrapContentHeight(), // Usar wrapContentHeight para ajustar la altura
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
         )
     ) {
-        Column {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(season.posterUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = season.name,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Column(modifier = Modifier.padding(horizontal = 4.dp)) {
-                Text(
-                    text = season.name,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyMedium
+        Column( // Usar una Columna como contenedor principal
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(season.posterUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = season.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp) // Ajustar altura de la imagen
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
                 )
-                Text(
-                    text = "${season.episodeCount} episodios",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.LightGray
-                )
+
+                if (favoriteViewModel.isUserLoggedIn()) {
+                    IconButton(
+                        onClick = {
+                            watchedViewModel.toggleWatchedSeason(serieId, season.seasonNumber, !isWatched)
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+                            contentDescription = if (isWatched) "Marcar como no vista" else "Marcar como vista",
+                            tint = if (isWatched) Color(0xFFFFD700) else Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = season.name, // Usar el nombre de la temporada directamente
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = "${season.episodeCount} episodios",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.LightGray
+            )
         }
     }
 }

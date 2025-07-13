@@ -7,5 +7,6 @@ data class Season(
     val overview: String,
     val episodeCount: Int,
     val posterUrl: String?,
-    val episodes: List<Episode> = emptyList()
+    val episodes: List<Episode> = emptyList(),
+    var isWatched: Boolean = false // Agregar campo para estado visto
 )
