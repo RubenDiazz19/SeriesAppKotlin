@@ -39,7 +39,7 @@ class SerieDetailViewModel @Inject constructor(
                             posterUrl = item.posterUrl,
                             originalTitle = item.originalTitle,
                             releaseDate = formatDate(item.firstAirDate),
-                            voteAverageFormatted = "${item.voteAverage} / 10\n(${item.voteCount} votos)",
+                            voteAverageFormatted = "${item.voteAverage} / 10",
                             runtimeFormatted = item.runtime?.let { "$it minutos" },
                             status = item.status,
                             genres = item.genres,

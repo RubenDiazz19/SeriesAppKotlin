@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -47,27 +48,11 @@ fun SerieDetailScreen(
         viewModel.loadDetail(serieId)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Detalles") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
-        }
-    ) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         uiState?.let { state ->
             if (state.error != null) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -77,32 +62,8 @@ fun SerieDetailScreen(
                     )
                 }
             } else {
-                val isWatched by watchedViewModel.isWatched(serieId).collectAsState(initial = false)
-                val serie = Serie(
-                    id = serieId,
-                    title = state.title ?: "",
-                    overview = state.overview ?: "",
-                    posterUrl = state.posterUrl ?: "",
-                    backdropUrl = null,
-                    voteAverage = 0.0,
-                    genres = state.genres,
-                    seasons = emptyList(),
-                    originalTitle = state.originalTitle,
-                    firstAirDate = state.releaseDate,
-                    voteCount = null,
-                    runtime = null,
-                    numberOfSeasons = state.numberOfSeasons,
-                    numberOfEpisodes = state.numberOfEpisodes,
-                    status = state.status,
-                    tagline = state.tagline
-                )
                 SerieDetailContent(
                     uiState = state,
-                    isWatched = isWatched,
-                    onWatchedClick = { newWatchedState ->
-                        watchedViewModel.toggleWatched(serie, newWatchedState)
-                    },
-                    modifier = Modifier.padding(paddingValues),
                     onSeasonClick = { seasonId ->
                         // TODO: Navigate to season detail
                     }
@@ -110,22 +71,61 @@ fun SerieDetailScreen(
             }
         } ?: run {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
             }
         }
+
+        // Top bar con botones de navegación y favoritos
+        TopAppBar(
+            title = { /* No title here */ },
+            navigationIcon = {
+                IconButton(onClick = onBackClick) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                }
+            },
+            actions = {
+                val isWatched by watchedViewModel.isWatched(serieId).collectAsState(initial = false)
+                IconButton(onClick = { 
+                    val serie = Serie(
+                        id = serieId,
+                        title = uiState?.title ?: "",
+                        overview = uiState?.overview ?: "",
+                        posterUrl = uiState?.posterUrl ?: "",
+                        backdropUrl = null,
+                        voteAverage = 0.0,
+                        genres = uiState?.genres,
+                        seasons = emptyList(),
+                        originalTitle = uiState?.originalTitle,
+                        firstAirDate = uiState?.releaseDate,
+                        voteCount = null,
+                        runtime = null,
+                        numberOfSeasons = uiState?.numberOfSeasons,
+                        numberOfEpisodes = uiState?.numberOfEpisodes,
+                        status = uiState?.status,
+                        tagline = uiState?.tagline
+                    )
+                    watchedViewModel.toggleWatched(serie, !isWatched) 
+                }) {
+                    Icon(
+                        imageVector = if (isWatched) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = if (isWatched) "Quitar de favoritos" else "Añadir a favoritos",
+                        tint = if (isWatched) Color.Red else Color.White
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent
+            )
+        )
     }
 }
 
 @Composable
 private fun SerieDetailContent(
     uiState: SerieDetailUiState,
-    isWatched: Boolean,
-    onWatchedClick: (Boolean) -> Unit,
     onSeasonClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -134,11 +134,11 @@ private fun SerieDetailContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // Imagen de fondo con gradiente
+        // Imagen de fondo que ocupa toda la parte superior
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(400.dp)
+                .height(450.dp) // Aumentar altura para un look más inmersivo
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -150,7 +150,7 @@ private fun SerieDetailContent(
                 contentScale = ContentScale.Crop
             )
             
-            // Gradiente
+            // Gradiente para que el texto debajo sea legible
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -158,70 +158,88 @@ private fun SerieDetailContent(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f)
-                            )
+                                Color.Black
+                            ),
+                            startY = 600f
                         )
                     )
             )
-            
-            // Botón de favorito
-            FloatingActionButton(
-                onClick = { onWatchedClick(!isWatched) },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    imageVector = if (isWatched) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (isWatched) "Quitar de favoritos" else "Añadir a favoritos",
-                    tint = if (isWatched) Color.Red else Color.White
-                )
-            }
         }
         
         // Contenido de detalles
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .background(Color.Black) // Fondo negro para el contenido
         ) {
-            // Título
+            // Calificación
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Star, contentDescription = "Calificación", tint = Color(0xFFFFD700))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = uiState.voteAverageFormatted,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Título y tagline
             Text(
                 text = uiState.title ?: "Sin título",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
             
-            // Tagline
             uiState.tagline?.let { tagline ->
                 if (tagline.isNotBlank()) {
                     Text(
                         text = tagline,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        color = Color.Gray,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // Información adicional
-            InfoRow("Fecha de estreno", uiState.releaseDate)
-            InfoRow("Calificación", uiState.voteAverageFormatted)
-            uiState.runtimeFormatted?.let { InfoRow("Duración", it) }
-            uiState.numberOfSeasons?.let { InfoRow("Temporadas", it.toString()) }
-            uiState.numberOfEpisodes?.let { InfoRow("Episodios", it.toString()) }
-            InfoRow("Estado", uiState.status)
-            
-            Spacer(modifier = Modifier.height(16.dp))
+
+            // Sinopsis
+            uiState.overview?.let { overview ->
+                if (overview.isNotBlank()) {
+                    Text(
+                        text = "Sinopsis",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    
+                    Text(
+                        text = overview,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 8.dp),
+                        lineHeight = 24.sp,
+                        color = Color.LightGray,
+                        textAlign = TextAlign.Justify
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
             
             // Géneros
             uiState.genres?.let { genres ->
                 if (genres.isNotEmpty()) {
                     Text(
                         text = "Géneros",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                     
                     LazyRow(
@@ -232,37 +250,21 @@ private fun SerieDetailContent(
                             Card(
                                 modifier = Modifier.clip(RoundedCornerShape(16.dp)),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    containerColor = Color(0xFFFFD700)
                                 )
                             ) {
                                 Text(
                                     text = genre.name,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
-            
-            // Sinopsis
-            uiState.overview?.let { overview ->
-                if (overview.isNotBlank()) {
-                    Text(
-                        text = "Sinopsis",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    Text(
-                        text = overview,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 8.dp),
-                        lineHeight = 20.sp
-                    )
                 }
             }
             
@@ -278,6 +280,38 @@ private fun SerieDetailContent(
 }
 
 @Composable
+private fun InfoPill(
+    label: String,
+    value: String?,
+    modifier: Modifier = Modifier
+) {
+    value?.let {
+        Card(
+            modifier = modifier.padding(vertical = 4.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.DarkGray)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "$label: ",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.LightGray
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun SeasonsSection(
     seasons: List<Season>,
     onSeasonClick: (Int) -> Unit
@@ -285,8 +319,9 @@ private fun SeasonsSection(
     Column {
         Text(
             text = "Temporadas",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.titleLarge,
+            color = Color.White,
+            fontWeight = FontWeight.Black
         )
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(
@@ -309,10 +344,10 @@ private fun SeasonCard(
         onClick = onClick,
         modifier = Modifier
             .width(120.dp)
-            .height(220.dp),
+            .height(240.dp),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.DarkGray
+            containerColor = Color.Transparent
         )
     ) {
         Column {
@@ -324,19 +359,24 @@ private fun SeasonCard(
                 contentDescription = season.name,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp),
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
-            Column(modifier = Modifier.padding(8.dp)) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(modifier = Modifier.padding(horizontal = 4.dp)) {
                 Text(
                     text = season.name,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
                     text = "${season.episodeCount} episodios",
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.LightGray
                 )
             }
         }
