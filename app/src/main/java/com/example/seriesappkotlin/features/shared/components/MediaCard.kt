@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 // Reemplazar import con comodín por imports específicos
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -310,8 +312,8 @@ private fun RowMediaCard(
                         onClick = toggleFavorite
                     ) {
                         Icon(
-                            imageVector = if (localFavorite) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
-                            contentDescription = if (localFavorite) "Quitar de vistos" else "Añadir a vistos",
+                            imageVector = if (localFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = if (localFavorite) "Quitar de favoritos" else "Añadir a favoritos",
                             tint = if (localFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
                         )
                     }

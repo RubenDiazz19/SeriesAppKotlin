@@ -93,16 +93,7 @@ fun SeasonDetailScreen(
                 }
             },
             actions = {
-                // Botón de favoritos (puedes implementar la lógica según necesites)
-                IconButton(onClick = { 
-                    // TODO: Implementar lógica de favoritos para temporadas
-                }) {
-                    Icon(
-                        imageVector = Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Añadir a favoritos",
-                        tint = Color.White
-                    )
-                }
+                // El botón de favoritos ha sido eliminado
             },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent

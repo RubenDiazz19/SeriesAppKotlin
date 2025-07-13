@@ -17,17 +17,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.seriesappkotlin.core.model.Serie
 import com.example.seriesappkotlin.features.auth.AuthViewModel
+import com.example.seriesappkotlin.features.favorites.FavoriteViewModel
 import com.example.seriesappkotlin.features.shared.components.*
+import kotlinx.coroutines.Dispatchers
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToDetail: (Int) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    favoriteViewModel: FavoriteViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
@@ -81,7 +85,7 @@ fun HomeScreen(
                     ModernSeriesGrid(
                         items = cachedSeries,
                         listState = listState,
-                        viewModel = viewModel,
+                        favoriteViewModel = favoriteViewModel,
                         isGuest = isGuest,
                         onNavigateToDetail = onNavigateToDetail
                     )
@@ -90,7 +94,7 @@ fun HomeScreen(
                     ModernPaginatedGrid(
                         pagedItems = pagedItems,
                         listState = listState,
-                        viewModel = viewModel,
+                        favoriteViewModel = favoriteViewModel,
                         isGuest = isGuest,
                         onNavigateToDetail = onNavigateToDetail
                     )
@@ -179,7 +183,7 @@ private fun FilterBottomBar() {
 private fun ModernSeriesGrid(
     items: List<Serie>,
     listState: LazyGridState,
-    viewModel: HomeViewModel,
+    favoriteViewModel: FavoriteViewModel,
     isGuest: Boolean,
     onNavigateToDetail: (Int) -> Unit
 ) {
@@ -200,16 +204,26 @@ private fun ModernSeriesGrid(
                 items = items,
                 key = { it.id }
             ) { item ->
-                val isWatched by viewModel.isWatched(item.id)
-                    .collectAsState(initial = false)
-
-                ModernMediaCard(
-                    serie = item,
-                    isFavorite = isWatched,
-                    onFavoriteClick = if (!isGuest) { { serie, newFavoriteState -> viewModel.toggleWatched(serie, newFavoriteState) } } else null,
-                    onItemClick = { onNavigateToDetail(it.id) },
-                    showFavoriteIcon = !isGuest
-                )
+                if (!isGuest) {
+                    val isFavorite by favoriteViewModel.isFavorite(item.id).collectAsState(initial = false)
+                    ModernMediaCard(
+                        serie = item,
+                        isFavorite = isFavorite,
+                        onFavoriteClick = { serie, newFavoriteState -> 
+                            favoriteViewModel.toggleFavorite(serie, newFavoriteState) 
+                        },
+                        onItemClick = { onNavigateToDetail(it.id) },
+                        showFavoriteIcon = true
+                    )
+                } else {
+                    ModernMediaCard(
+                        serie = item,
+                        isFavorite = false,
+                        onFavoriteClick = null,
+                        onItemClick = { onNavigateToDetail(it.id) },
+                        showFavoriteIcon = false
+                    )
+                }
             }
         }
     }
@@ -217,9 +231,9 @@ private fun ModernSeriesGrid(
 
 @Composable
 private fun ModernPaginatedGrid(
-    pagedItems: androidx.paging.compose.LazyPagingItems<Serie>,
+    pagedItems: LazyPagingItems<Serie>,
     listState: LazyGridState,
-    viewModel: HomeViewModel,
+    favoriteViewModel: FavoriteViewModel,
     isGuest: Boolean,
     onNavigateToDetail: (Int) -> Unit
 ) {
@@ -239,16 +253,26 @@ private fun ModernPaginatedGrid(
         ) { index ->
             val item = pagedItems[index]
             if (item != null) {
-                val isWatched by viewModel.isWatched(item.id)
-                    .collectAsState(initial = false)
-
-                ModernMediaCard(
-                    serie = item,
-                    isFavorite = isWatched,
-                    onFavoriteClick = if (!isGuest) { { serie, newFavoriteState -> viewModel.toggleWatched(serie, newFavoriteState) } } else null,
-                    onItemClick = { onNavigateToDetail(item.id) },
-                    showFavoriteIcon = !isGuest
-                )
+                if (!isGuest) {
+                    val isFavorite by favoriteViewModel.isFavorite(item.id).collectAsState(initial = false)
+                    ModernMediaCard(
+                        serie = item,
+                        isFavorite = isFavorite,
+                        onFavoriteClick = { serie, newFavoriteState -> 
+                            favoriteViewModel.toggleFavorite(serie, newFavoriteState) 
+                        },
+                        onItemClick = { onNavigateToDetail(item.id) },
+                        showFavoriteIcon = true
+                    )
+                } else {
+                    ModernMediaCard(
+                        serie = item,
+                        isFavorite = false,
+                        onFavoriteClick = null,
+                        onItemClick = { onNavigateToDetail(item.id) },
+                        showFavoriteIcon = false
+                    )
+                }
             }
         }
         

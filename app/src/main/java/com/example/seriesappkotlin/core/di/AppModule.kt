@@ -3,6 +3,7 @@ package com.example.seriesappkotlin.core.di
 import android.content.Context
 import androidx.room.Room
 import com.example.seriesappkotlin.core.database.AppDatabase
+import com.example.seriesappkotlin.core.database.dao.FavoriteDao
 import com.example.seriesappkotlin.core.database.dao.SerieDao
 import com.example.seriesappkotlin.core.database.dao.UserDao
 import com.example.seriesappkotlin.core.database.dao.WatchedDao
@@ -77,6 +78,11 @@ object AppModule {
     @Provides
     fun provideWatchedDao(appDatabase: AppDatabase): WatchedDao {
         return appDatabase.watchedDao()
+    }
+
+    @Provides
+    fun provideFavoriteDao(appDatabase: AppDatabase): FavoriteDao {
+        return appDatabase.favoriteDao()
     }
 
     @Provides

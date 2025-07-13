@@ -33,6 +33,7 @@ import coil.request.ImageRequest
 import com.example.seriesappkotlin.core.model.Season
 import com.example.seriesappkotlin.core.model.Serie
 import com.example.seriesappkotlin.features.favorites.WatchedViewModel
+import com.example.seriesappkotlin.features.favorites.FavoriteViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +42,7 @@ fun SerieDetailScreen(
     onBackClick: () -> Unit,
     onSeasonClick: (Int, Int) -> Unit, // Modified to pass serieId and seasonNumber
     viewModel: SerieDetailViewModel = hiltViewModel(),
-    watchedViewModel: WatchedViewModel = hiltViewModel()
+    favoriteViewModel: FavoriteViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -88,33 +89,37 @@ fun SerieDetailScreen(
                 }
             },
             actions = {
-                val isWatched by watchedViewModel.isWatched(serieId).collectAsState(initial = false)
-                IconButton(onClick = { 
-                    val serie = Serie(
-                        id = serieId,
-                        title = uiState?.title ?: "",
-                        overview = uiState?.overview ?: "",
-                        posterUrl = uiState?.posterUrl ?: "",
-                        backdropUrl = null,
-                        voteAverage = 0.0,
-                        genres = uiState?.genres,
-                        seasons = emptyList(),
-                        originalTitle = uiState?.originalTitle,
-                        firstAirDate = uiState?.releaseDate,
-                        voteCount = null,
-                        runtime = null,
-                        numberOfSeasons = uiState?.numberOfSeasons,
-                        numberOfEpisodes = uiState?.numberOfEpisodes,
-                        status = uiState?.status,
-                        tagline = uiState?.tagline
-                    )
-                    watchedViewModel.toggleWatched(serie, !isWatched) 
-                }) {
-                    Icon(
-                        imageVector = if (isWatched) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = if (isWatched) "Quitar de favoritos" else "Añadir a favoritos",
-                        tint = if (isWatched) Color.Red else Color.White
-                    )
+                val isUserLoggedIn = favoriteViewModel.isUserLoggedIn()
+                
+                if (isUserLoggedIn) {
+                    val isFavorite by favoriteViewModel.isFavorite(serieId).collectAsState(initial = false)
+                    IconButton(onClick = { 
+                        val serie = Serie(
+                            id = serieId,
+                            title = uiState?.title ?: "",
+                            overview = uiState?.overview ?: "",
+                            posterUrl = uiState?.posterUrl ?: "",
+                            backdropUrl = null,
+                            voteAverage = 0.0,
+                            genres = uiState?.genres,
+                            seasons = emptyList(),
+                            originalTitle = uiState?.originalTitle,
+                            firstAirDate = uiState?.releaseDate,
+                            voteCount = null,
+                            runtime = null,
+                            numberOfSeasons = uiState?.numberOfSeasons,
+                            numberOfEpisodes = uiState?.numberOfEpisodes,
+                            status = uiState?.status,
+                            tagline = uiState?.tagline
+                        )
+                        favoriteViewModel.toggleFavorite(serie, !isFavorite) 
+                    }) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = if (isFavorite) "Quitar de favoritos" else "Añadir a favoritos",
+                            tint = if (isFavorite) Color.Red else Color.White
+                        )
+                    }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(

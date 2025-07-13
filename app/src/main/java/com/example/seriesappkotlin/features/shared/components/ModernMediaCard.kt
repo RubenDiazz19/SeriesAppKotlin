@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.*
@@ -98,8 +100,8 @@ fun ModernMediaCard(
                         .size(32.dp)
                 ) {
                     Icon(
-                        imageVector = if (localFavorite) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
-                        contentDescription = if (localFavorite) "Quitar de vistos" else "Añadir a vistos",
+                        imageVector = if (localFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = if (localFavorite) "Quitar de favoritos" else "Añadir a favoritos",
                         tint = if (localFavorite) Color.Red else Color.White,
                         modifier = Modifier.size(24.dp)
                     )
