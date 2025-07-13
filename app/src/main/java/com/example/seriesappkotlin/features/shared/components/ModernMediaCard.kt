@@ -58,6 +58,13 @@ fun ModernMediaCard(
                 contentScale = ContentScale.Crop
             )
 
+            // Subtle black overlay for better rating visibility
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.20f))
+            )
+
             // Overlay gradient for better text visibility
             Box(
                 modifier = Modifier
@@ -83,11 +90,6 @@ fun ModernMediaCard(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(8.dp)
-                    .background(
-                        Color.Black.copy(alpha = 0.6f),
-                        RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
             )
             
             // Favorite icon in top-right corner

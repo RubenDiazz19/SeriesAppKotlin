@@ -77,7 +77,10 @@ fun HomeScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            ModernTopBar()
+            ModernTopBar(
+                currentUser = currentUser,
+                isGuest = isGuest
+            )
         },
         bottomBar = {
             Column {
@@ -140,59 +143,20 @@ private fun MinimalistGenreFilter(
     onGenreSelected: (GenreItem) -> Unit,
     onClearAll: () -> Unit
 ) {
-    Surface(
+    // Solo la lista de géneros, sin header ni padding extra
+    LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        color = Color(0xFF1A1A1A),
-        shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+            .background(Color.Black)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            // Header compacto
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (selectedGenres.isEmpty()) "Selecciona géneros" else "Géneros (${selectedGenres.size})",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                
-                if (selectedGenres.isNotEmpty()) {
-                    TextButton(
-                        onClick = onClearAll,
-                        modifier = Modifier.height(32.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp)
-                    ) {
-                        Text(
-                            text = "Limpiar",
-                            color = Color(0xFFFFD700),
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Lista compacta de géneros
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp)
-            ) {
-                items(SUPPORTED_GENRES) { genre ->
-                    CompactGenreChip(
-                        genre = genre,
-                        isSelected = selectedGenres.contains(genre),
-                        onSelected = { onGenreSelected(genre) }
-                    )
-                }
-            }
+        items(SUPPORTED_GENRES) { genre ->
+            CompactGenreChip(
+                genre = genre,
+                isSelected = selectedGenres.contains(genre),
+                onSelected = { onGenreSelected(genre) }
+            )
         }
     }
 }
@@ -207,18 +171,18 @@ private fun CompactGenreChip(
     Surface(
         modifier = Modifier
             .clickable { onSelected() }
-            .height(28.dp),
-        color = if (isSelected) Color(0xFFFFD700) else Color(0xFF333333),
-        shape = RoundedCornerShape(14.dp)
+            .height(32.dp),
+        color = if (isSelected) Color(0xFFFFD700) else Color(0xFF2A2A2A),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Box(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = genre.name,
                 color = if (isSelected) Color.Black else Color.White,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
             )
         }
@@ -227,13 +191,20 @@ private fun CompactGenreChip(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ModernTopBar() {
+private fun ModernTopBar(
+    currentUser: com.example.seriesappkotlin.core.database.entity.UserEntity? = null,
+    isGuest: Boolean = true
+) {
     TopAppBar(
         title = {
             Text(
-                text = "Series",
+                text = if (isGuest) {
+                    "Listado de Series"
+                } else {
+                    "¡Bienvenido, ${currentUser?.username ?: "Usuario"}!"
+                },
                 color = Color.White,
-                fontSize = 24.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
         },
