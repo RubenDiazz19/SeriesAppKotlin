@@ -1,13 +1,20 @@
 package com.example.seriesappkotlin.features.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -23,19 +30,16 @@ fun HomeScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val inlineSearchActive by viewModel.inlineSearchActive.collectAsState()
-    val showSearchBarForced by viewModel.showSearchBarForced.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
     val isGuest = currentUser == null
-    
-    val context = LocalContext.current
+
     val snackbarHostState = remember { SnackbarHostState() }
-    
+
     val pagedItems = viewModel.pagedSeries.collectAsState().value.collectAsLazyPagingItems()
     val cachedSeries by viewModel.cachedSeries.collectAsState()
-    
+
     val listState = rememberLazyGridState()
-    
+
     // Mostrar mensaje de sin conexión
     LaunchedEffect(uiState.isOffline) {
         if (uiState.isOffline) {
@@ -45,7 +49,7 @@ fun HomeScreen(
             )
         }
     }
-    
+
     // Mostrar errores
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
@@ -56,42 +60,25 @@ fun HomeScreen(
             viewModel.clearError()
         }
     }
-    
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            if (!inlineSearchActive && !showSearchBarForced) {
-                SearchFab(
-                    onClick = { viewModel.showInlineSearch() }
-                )
-            }
+        topBar = {
+            ModernTopBar()
+        },
+        bottomBar = {
+            FilterBottomBar()
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(Color.Black)
         ) {
-            // Header simplificado - eliminar parámetros de sorting
-            SimpleHeader(
-                searchText = viewModel.searchText,
-                onSearchQueryChanged = viewModel::onSearchTextChanged,
-                inlineSearchActive = inlineSearchActive
-            )
-            
-            if (inlineSearchActive || showSearchBarForced) {
-                InlineSearchTextField(
-                    searchText = viewModel.searchText,
-                    onSearchQueryChanged = viewModel::onSearchTextChanged,
-                    selectedCategory = "Series",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-            
-            // Simplificar la lógica - solo mostrar contenido normal o en caché
             when {
                 uiState.isOffline -> {
-                    CachedContent(
+                    ModernSeriesGrid(
                         items = cachedSeries,
                         listState = listState,
                         viewModel = viewModel,
@@ -100,7 +87,7 @@ fun HomeScreen(
                     )
                 }
                 else -> {
-                    PaginatedContent(
+                    ModernPaginatedGrid(
                         pagedItems = pagedItems,
                         listState = listState,
                         viewModel = viewModel,
@@ -113,63 +100,83 @@ fun HomeScreen(
     }
 }
 
-// Agregar un header simplificado
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SimpleHeader(
-    searchText: String,
-    onSearchQueryChanged: (String) -> Unit,
-    inlineSearchActive: Boolean
-) {
-    // Implementación simple del header sin sorting
-    Text(
-        text = "Series",
-        style = MaterialTheme.typography.headlineMedium,
-        modifier = Modifier.padding(16.dp)
+private fun ModernTopBar() {
+    TopAppBar(
+        title = {
+            Text(
+                text = "Series",
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        actions = {
+            IconButton(
+                onClick = { /* TODO: Implementar acción del ojo */ }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info, // Icono cambiado
+                    contentDescription = "Ver opciones",
+                    tint = Color.White
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Black
+        )
     )
 }
 
 @Composable
-private fun WatchedContent(
-    items: List<Serie>,
-    listState: LazyGridState,
-    viewModel: HomeViewModel,
-    isGuest: Boolean,
-    onNavigateToDetail: (Int) -> Unit
-) {
-    if (items.isEmpty()) {
-        EmptyState(message = "No tienes series vistas") // Cambiar mensaje
-    } else {
-        LazyVerticalGrid(
-            state = listState,
-            columns = GridCells.Adaptive(160.dp),
+private fun FilterBottomBar() {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp),
+        color = Color.Black
+    ) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 8.dp)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            items(
-                items = items,
-                key = { it.id }
-            ) { item ->
-                val isWatched by viewModel.isWatched(item.id) // Cambiar de isFavorite a isWatched
-                    .collectAsState(initial = false)
-
-                MediaCard(
-                    serie = item,
-                    isFavorite = isWatched, // Usar isWatched
-                    onFavoriteClick = if (!isGuest) { { serie, newFavoriteState -> viewModel.toggleWatched(serie, newFavoriteState) } } else null, // Cambiar de toggleFavorite a toggleWatched
-                    onItemClick = { onNavigateToDetail(it.id) },
-                    showFavoriteIcon = !isGuest
-                )
+            Button(
+                onClick = { /* TODO: Implementar filtros */ },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFFD700) // Color dorado como en la imagen
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.List, // Icono cambiado
+                        contentDescription = "Filtros",
+                        tint = Color.Black
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "FILTROS",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun CachedContent(
+private fun ModernSeriesGrid(
     items: List<Serie>,
     listState: LazyGridState,
     viewModel: HomeViewModel,
@@ -177,17 +184,17 @@ private fun CachedContent(
     onNavigateToDetail: (Int) -> Unit
 ) {
     if (items.isEmpty()) {
-        EmptyState(message = "No hay contenido en caché disponible")
+        EmptyState(message = "No hay contenido disponible")
     } else {
         LazyVerticalGrid(
             state = listState,
-            columns = GridCells.Adaptive(160.dp),
+            columns = GridCells.Fixed(3), // 3 columnas como en la imagen
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 8.dp)
+                .padding(horizontal = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             items(
                 items = items,
@@ -196,7 +203,7 @@ private fun CachedContent(
                 val isWatched by viewModel.isWatched(item.id)
                     .collectAsState(initial = false)
 
-                MediaCard(
+                ModernMediaCard(
                     serie = item,
                     isFavorite = isWatched,
                     onFavoriteClick = if (!isGuest) { { serie, newFavoriteState -> viewModel.toggleWatched(serie, newFavoriteState) } } else null,
@@ -209,7 +216,7 @@ private fun CachedContent(
 }
 
 @Composable
-private fun PaginatedContent(
+private fun ModernPaginatedGrid(
     pagedItems: androidx.paging.compose.LazyPagingItems<Serie>,
     listState: LazyGridState,
     viewModel: HomeViewModel,
@@ -218,13 +225,13 @@ private fun PaginatedContent(
 ) {
     LazyVerticalGrid(
         state = listState,
-        columns = GridCells.Adaptive(160.dp),
+        columns = GridCells.Fixed(3), // 3 columnas como en la imagen
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(vertical = 8.dp)
+            .padding(horizontal = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(vertical = 16.dp)
     ) {
         items(
             count = pagedItems.itemCount,
@@ -235,7 +242,7 @@ private fun PaginatedContent(
                 val isWatched by viewModel.isWatched(item.id)
                     .collectAsState(initial = false)
 
-                MediaCard(
+                ModernMediaCard(
                     serie = item,
                     isFavorite = isWatched,
                     onFavoriteClick = if (!isGuest) { { serie, newFavoriteState -> viewModel.toggleWatched(serie, newFavoriteState) } } else null,
@@ -290,32 +297,8 @@ private fun EmptyState(
     ) {
         Text(
             text = message,
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color.White
         )
     }
 }
-
-@Composable
-private fun ErrorState(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = onRetry) {
-            Text("Reintentar")
-        }
-    }
-}
-
-// Eliminar completamente la función WatchedContent ya que no se usa

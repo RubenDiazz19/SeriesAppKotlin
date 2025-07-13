@@ -2,15 +2,15 @@
 # Versiones principales del proyecto
 agp = "8.10.1"
 hiltNavigationCompose = "1.2.0"
-kotlin = "2.0.21"
+kotlin = "2.2.0"
 
 # AndroidX y Jetpack Compose
 coreKtx = "1.16.0"
-lifecycleRuntimeKtx = "2.9.0"
+lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
-composeBom = "2025.05.01"
-lifecycleViewModelCompose = "2.9.0"
-composeRuntimeLiveData = "1.8.2"
+composeBom = "2025.06.01"
+lifecycleViewModelCompose = "2.9.1"
+composeRuntimeLiveData = "1.8.3"
 
 # Testing
 junit = "4.13.2"
@@ -18,24 +18,24 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 
 # Room
-navigationCompose = "2.9.0"
-navigationComposeVersion = "2.7.7"
+navigationCompose = "2.9.1"
+navigationComposeVersion = "2.9.1"
 pagingCompose = "3.3.6"
 pagingRuntime = "3.3.6"
-roomVersion = "2.7.1"
+roomVersion = "2.7.2"
 
 # Retrofit + Gson + OkHttp
-retrofitVersion = "2.9.0"
-gsonVersion = "2.11.0"
-okhttpVersion = "4.12.0"
+retrofitVersion = "3.0.0"
+gsonVersion = "2.13.1"
+okhttpVersion = "5.1.0"
 
 # Hilt
-hiltVersion = "2.51.1"
-roomCommonJvm = "2.7.1"
-roomRuntimeAndroid = "2.7.1"
+hiltVersion = "2.56.2"
+roomCommonJvm = "2.7.2"
+roomRuntimeAndroid = "2.7.2"
 
 # Coil
-coilVersion = "2.5.0"
+coilVersion = "2.7.0"
 
 [libraries]
 
