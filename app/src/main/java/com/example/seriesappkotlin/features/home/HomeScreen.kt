@@ -1,10 +1,15 @@
 package com.example.seriesappkotlin.features.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
@@ -19,6 +24,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.example.seriesappkotlin.core.model.GenreItem
+import com.example.seriesappkotlin.core.model.SUPPORTED_GENRES
 import com.example.seriesappkotlin.core.model.Serie
 import com.example.seriesappkotlin.features.auth.AuthViewModel
 import com.example.seriesappkotlin.features.favorites.FavoriteViewModel
@@ -36,6 +43,8 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
     val isGuest = currentUser == null
+    val showGenreFilter by viewModel.showGenreFilter.collectAsState()
+    val selectedGenres by viewModel.selectedGenres.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -71,7 +80,27 @@ fun HomeScreen(
             ModernTopBar()
         },
         bottomBar = {
-            FilterBottomBar()
+            Column {
+                // Filtro de géneros minimalista encima del botón
+                if (showGenreFilter) {
+                    MinimalistGenreFilter(
+                        selectedGenres = selectedGenres,
+                        onGenreSelected = viewModel::onGenreSelected,
+                        onClearAll = viewModel::clearAllGenres
+                    )
+                }
+                
+                FilterBottomBar(
+                    onFilterClick = { 
+                        if (showGenreFilter) {
+                            viewModel.hideGenreFilter()
+                        } else {
+                            viewModel.showGenreFilter()
+                        }
+                    },
+                    isFilterActive = showGenreFilter || selectedGenres.isNotEmpty()
+                )
+            }
         }
     ) { paddingValues ->
         Box(
@@ -106,6 +135,98 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun MinimalistGenreFilter(
+    selectedGenres: List<GenreItem>,
+    onGenreSelected: (GenreItem) -> Unit,
+    onClearAll: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        color = Color(0xFF1A1A1A),
+        shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            // Header compacto
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (selectedGenres.isEmpty()) "Selecciona géneros" else "Géneros (${selectedGenres.size})",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                
+                if (selectedGenres.isNotEmpty()) {
+                    TextButton(
+                        onClick = onClearAll,
+                        modifier = Modifier.height(32.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp)
+                    ) {
+                        Text(
+                            text = "Limpiar",
+                            color = Color(0xFFFFD700),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Lista compacta de géneros
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                items(SUPPORTED_GENRES) { genre ->
+                    CompactGenreChip(
+                        genre = genre,
+                        isSelected = selectedGenres.contains(genre),
+                        onSelected = { onGenreSelected(genre) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CompactGenreChip(
+    genre: GenreItem,
+    isSelected: Boolean,
+    onSelected: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .clickable { onSelected() }
+            .height(28.dp),
+        color = if (isSelected) Color(0xFFFFD700) else Color(0xFF333333),
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = genre.name,
+                color = if (isSelected) Color.Black else Color.White,
+                fontSize = 12.sp,
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun ModernTopBar() {
     TopAppBar(
         title = {
@@ -121,7 +242,7 @@ private fun ModernTopBar() {
                 onClick = { /* TODO: Implementar acción del ojo */ }
             ) {
                 Icon(
-                    imageVector = Icons.Default.Info, // Icono cambiado
+                    imageVector = Icons.Default.Info,
                     contentDescription = "Ver opciones",
                     tint = Color.White
                 )
@@ -133,8 +254,12 @@ private fun ModernTopBar() {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterBottomBar() {
+private fun FilterBottomBar(
+    onFilterClick: () -> Unit,
+    isFilterActive: Boolean = false
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -148,12 +273,12 @@ private fun FilterBottomBar() {
             contentAlignment = Alignment.Center
         ) {
             Button(
-                onClick = { /* TODO: Implementar filtros */ },
+                onClick = onFilterClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFFD700) // Color dorado como en la imagen
+                    containerColor = if (isFilterActive) Color(0xFFFFD700).copy(alpha = 0.9f) else Color(0xFFFFD700)
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -162,7 +287,7 @@ private fun FilterBottomBar() {
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.List, // Icono cambiado
+                        imageVector = Icons.Default.List,
                         contentDescription = "Filtros",
                         tint = Color.Black
                     )

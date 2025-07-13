@@ -50,6 +50,10 @@ class HomeViewModel @Inject constructor(
     private val _selectedGenres = MutableStateFlow<List<GenreItem>>(emptyList())
     val selectedGenres: StateFlow<List<GenreItem>> = _selectedGenres.asStateFlow()
 
+    // Agregar estas líneas después de _selectedGenres
+    private val _showGenreFilter = MutableStateFlow(false)
+    val showGenreFilter: StateFlow<Boolean> = _showGenreFilter.asStateFlow()
+
     val pagedSeries: StateFlow<Flow<PagingData<Serie>>> = combine(
         _sortBy,
         _searchQuery,
@@ -195,6 +199,19 @@ class HomeViewModel @Inject constructor(
             currentSelection.add(genre)
         }
         _selectedGenres.value = currentSelection
+    }
+
+    // Estas funciones ya están definidas correctamente
+    fun showGenreFilter() {
+        _showGenreFilter.value = true
+    }
+
+    fun hideGenreFilter() {
+        _showGenreFilter.value = false
+    }
+
+    fun clearAllGenres() {
+        _selectedGenres.value = emptyList()
     }
 
     private fun loadSeries() {
