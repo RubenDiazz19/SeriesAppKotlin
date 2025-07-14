@@ -126,7 +126,6 @@ fun SerieDetailScreen(
                         } ?: false
                         
                         // LaunchedEffect para actualizar automáticamente el estado de la serie
-                        // CORREGIDO: Agregar isWatched como dependencia y mejorar la lógica
                         LaunchedEffect(allSeasonsWatched, isWatched) {
                             // Solo actualizar si hay una diferencia real y evitar loops infinitos
                             if (allSeasonsWatched != isWatched) {
@@ -151,24 +150,72 @@ fun SerieDetailScreen(
                                 watchedViewModel.toggleWatched(serie, allSeasonsWatched)
                             }
                         }
-                        // Icono de visto (no clickeable) - envuelto en círculo
-Box(
-    modifier = Modifier
-        .padding(end = 16.dp)
-        .size(40.dp)
-        .background(
-            color = Color.Black.copy(alpha = 0.3f),
-            shape = CircleShape
-        ),
-    contentAlignment = Alignment.Center
-) {
-    Icon(
-        imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
-        contentDescription = if (isWatched) "Serie vista" else "Serie no vista",
-        tint = if (isWatched) Color(0xFFFFD700) else Color.White,
-        modifier = Modifier.size(24.dp)
-    )
-}
+                        
+                        // Row para contener ambos iconos
+                        Row {
+                            // Botón de favorito (clickeable) - envuelto en círculo
+                            Box(
+                                modifier = Modifier
+                                    .padding(end = 8.dp)
+                                    .size(40.dp)
+                                    .background(
+                                        color = Color.Black.copy(alpha = 0.3f),
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        val serie = Serie(
+                                            id = serieId,
+                                            title = state.title ?: "",
+                                            overview = state.overview ?: "",
+                                            posterUrl = state.posterUrl ?: "",
+                                            backdropUrl = null,
+                                            voteAverage = 0.0,
+                                            genres = state.genres,
+                                            seasons = emptyList(),
+                                            originalTitle = state.originalTitle,
+                                            firstAirDate = state.releaseDate,
+                                            voteCount = null,
+                                            runtime = null,
+                                            numberOfSeasons = state.numberOfSeasons,
+                                            numberOfEpisodes = state.numberOfEpisodes,
+                                            status = state.status,
+                                            tagline = state.tagline
+                                        )
+                                        favoriteViewModel.toggleFavorite(serie, !isFavorite)
+                                    },
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(
+                                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                        contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                                        tint = if (isFavorite) Color.Red else Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                            
+                            // Icono de visto (no clickeable) - envuelto en círculo
+                            Box(
+                                modifier = Modifier
+                                    .padding(end = 16.dp)
+                                    .size(40.dp)
+                                    .background(
+                                        color = Color.Black.copy(alpha = 0.3f),
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+                                    contentDescription = if (isWatched) "Serie vista" else "Serie no vista",
+                                    tint = if (isWatched) Color(0xFFFFD700) else Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
