@@ -482,19 +482,12 @@ private fun SeasonCard(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        IconButton(
-                            onClick = {
-                                watchedViewModel.toggleWatchedSeason(serieId, season.seasonNumber, !isWatched)
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Icon(
-                                imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
-                                contentDescription = if (isWatched) "Marcar como no vista" else "Marcar como vista",
-                                tint = if (isWatched) Color(0xFFFFD700) else Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+                            contentDescription = if (isWatched) "Temporada vista" else "Temporada no vista",
+                            tint = if (isWatched) Color(0xFFFFD700) else Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }

@@ -27,12 +27,12 @@ import com.example.seriesappkotlin.core.model.Serie
 fun ModernMediaCard(
     serie: Serie,
     isFavorite: Boolean = false,
-    isWatched: Boolean = false, // Agregar parámetro
+    isWatched: Boolean = false,
     onFavoriteClick: ((serie: Serie, isFavorite: Boolean) -> Unit)? = null,
-    onWatchedClick: ((serie: Serie, isWatched: Boolean) -> Unit)? = null, // Agregar parámetro
+    onWatchedClick: ((serie: Serie, isWatched: Boolean) -> Unit)? = null, // Mantener para compatibilidad pero no usar
     onItemClick: ((serie: Serie) -> Unit)? = null,
     showFavoriteIcon: Boolean = true,
-    showWatchedIcon: Boolean = true, // Agregar parámetro
+    showWatchedIcon: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val (localFavorite, toggleFavorite) = rememberFavoriteState(
@@ -41,7 +41,8 @@ fun ModernMediaCard(
         onFavoriteToggle = { item, fav -> onFavoriteClick?.invoke(item, fav) }
     )
     
-    // Agregar estado local para watched
+    // Eliminar el estado local y la lógica de toggle para watched
+    // ya que ahora es solo informativo
     var localWatched by remember { mutableStateOf(isWatched) }
     
     // Sincronizar estado local con prop
@@ -131,16 +132,16 @@ fun ModernMediaCard(
                     }
                 }
                 
-                // Icono de visto (segundo)
-                if (showWatchedIcon && onWatchedClick != null) {
-                    IconButton(
-                        onClick = toggleWatched,
-                        modifier = Modifier.size(32.dp)
+                // Icono de visto (segundo) - ahora solo informativo
+                if (showWatchedIcon) {
+                    Box(
+                        modifier = Modifier.size(32.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (localWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
-                            contentDescription = if (localWatched) "Marcar como no vista" else "Marcar como vista",
-                            tint = if (localWatched) Color(0xFFFFD700) else Color.White, // Amarillo cuando está marcada
+                            imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+                            contentDescription = if (isWatched) "Serie vista" else "Serie no vista",
+                            tint = if (isWatched) Color(0xFFFFD700) else Color.White,
                             modifier = Modifier.size(20.dp)
                         )
                     }
