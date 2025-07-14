@@ -2,6 +2,7 @@ package com.example.seriesappkotlin.features.favorites
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.seriesappkotlin.core.database.entity.WatchedSeasonEntity
 import com.example.seriesappkotlin.core.model.Serie
 import com.example.seriesappkotlin.features.shared.repository.WatchedRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,4 +49,8 @@ class WatchedViewModel @Inject constructor(
 
     fun isEpisodeWatched(serieId: Int, seasonNumber: Int, episodeNumber: Int): Flow<Boolean> =
         watchedRepository.isEpisodeWatched(serieId, seasonNumber, episodeNumber)
+
+
+    fun getWatchedSeasonsForSerie(serieId: Int): Flow<List<WatchedSeasonEntity>> =
+        watchedRepository.getWatchedSeasonsForSerie(serieId)
 }

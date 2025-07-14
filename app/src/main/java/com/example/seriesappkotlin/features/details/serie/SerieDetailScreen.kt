@@ -36,6 +36,7 @@ import com.example.seriesappkotlin.core.model.Season
 import com.example.seriesappkotlin.core.model.Serie
 import com.example.seriesappkotlin.features.favorites.FavoriteViewModel
 import com.example.seriesappkotlin.features.favorites.WatchedViewModel
+import com.example.seriesappkotlin.core.database.entity.WatchedSeasonEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -119,7 +120,47 @@ fun SerieDetailScreen(
                         }
                         
                         // Botón de visto
+                        // Botón de visto
                         val isWatched by watchedViewModel.isWatched(serieId).collectAsState(initial = false)
+                        
+                        // Observar las temporadas vistas para calcular si todas están vistas
+                        val watchedSeasons by watchedViewModel.getWatchedSeasonsForSerie(serieId).collectAsState(initial = emptyList())
+                        
+                        // Calcular si todas las temporadas están vistas
+                        val allSeasonsWatched = state.seasons?.let { seasons ->
+                            if (seasons.isNotEmpty()) {
+                                val watchedSeasonNumbers = watchedSeasons.map { it.seasonNumber }.toSet()
+                                seasons.all { season -> watchedSeasonNumbers.contains(season.seasonNumber) }
+                            } else false
+                        } ?: false
+                        
+                        // LaunchedEffect para actualizar automáticamente el estado de la serie
+                        // CORREGIDO: Agregar isWatched como dependencia y mejorar la lógica
+                        LaunchedEffect(allSeasonsWatched, isWatched) {
+                            // Solo actualizar si hay una diferencia real y evitar loops infinitos
+                            if (allSeasonsWatched != isWatched) {
+                                val serie = Serie(
+                                    id = serieId,
+                                    title = state.title ?: "",
+                                    overview = state.overview ?: "",
+                                    posterUrl = state.posterUrl ?: "",
+                                    backdropUrl = null,
+                                    voteAverage = 0.0,
+                                    genres = state.genres,
+                                    seasons = emptyList(),
+                                    originalTitle = state.originalTitle,
+                                    firstAirDate = state.releaseDate,
+                                    voteCount = null,
+                                    runtime = null,
+                                    numberOfSeasons = state.numberOfSeasons,
+                                    numberOfEpisodes = state.numberOfEpisodes,
+                                    status = state.status,
+                                    tagline = state.tagline
+                                )
+                                watchedViewModel.toggleWatched(serie, allSeasonsWatched)
+                            }
+                        }
+                        
                         IconButton(onClick = { 
                             val serie = Serie(
                                 id = serieId,

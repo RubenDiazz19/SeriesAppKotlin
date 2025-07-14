@@ -99,4 +99,10 @@ class WatchedRepository @Inject constructor(
             }
         } ?: flowOf(emptyList())
     }
+    
+    fun getWatchedSeasonsForSerie(serieId: Int): Flow<List<WatchedSeasonEntity>> {
+        return userRepository.getCurrentUserId()?.let { userId ->
+            watchedSeasonDao.getWatchedSeasonsForSerie(userId, serieId)
+        } ?: flowOf(emptyList())
+    }
 }
