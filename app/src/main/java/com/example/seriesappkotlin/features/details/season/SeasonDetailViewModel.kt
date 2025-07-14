@@ -50,7 +50,12 @@ class SeasonDetailViewModel @Inject constructor(
                     )
                 }
                 is AppResult.Error -> {
-                    SeasonDetailUiState(error = result.exception.localizedMessage ?: "Error desconocido")
+                    val errorMessage = if (result.exception.message?.contains("no está disponible sin conexión") == true) {
+                        "Esta información no está disponible sin conexión"
+                    } else {
+                        result.exception.localizedMessage ?: "Error desconocido"
+                    }
+                    SeasonDetailUiState(error = errorMessage)
                 }
             }
         }

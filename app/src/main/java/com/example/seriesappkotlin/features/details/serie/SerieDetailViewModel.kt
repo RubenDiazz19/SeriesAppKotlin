@@ -26,7 +26,6 @@ class SerieDetailViewModel @Inject constructor(
     fun loadDetail(id: Int) {
         viewModelScope.launch {
             try {
-                // Asumimos que getSerieDetails ahora devuelve AppResult<Serie>
                 val result = serieRepository.getSerieDetails(id)
 
                 _uiState.value = when (result) {
@@ -39,22 +38,25 @@ class SerieDetailViewModel @Inject constructor(
                             posterUrl = item.posterUrl,
                             originalTitle = item.originalTitle,
                             releaseDate = formatDate(item.firstAirDate),
-                            voteAverageFormatted = "${item.voteAverage} / 10",
-                            runtimeFormatted = item.runtime?.let { "$it minutos" },
+                            voteAverageFormatted = formatVoteAverage(item.voteAverage),
                             status = item.status,
                             genres = item.genres,
                             numberOfSeasons = item.numberOfSeasons,
                             numberOfEpisodes = item.numberOfEpisodes,
-                            seasons = item.seasons,
-                            error = null
+                            seasons = item.seasons
                         )
                     }
                     is AppResult.Error -> {
-                        SerieDetailUiState(error = result.exception.localizedMessage ?: "Error desconocido")
+                        val errorMessage = if (result.exception.message?.contains("no está disponible sin conexión") == true) {
+                            "Esta información no está disponible sin conexión"
+                        } else {
+                            result.exception.localizedMessage ?: "Error desconocido"
+                        }
+                        SerieDetailUiState(error = errorMessage)
                     }
                 }
             } catch (e: Exception) {
-                _uiState.value = SerieDetailUiState(error = e.localizedMessage ?: "Error al cargar los detalles")
+                _uiState.value = SerieDetailUiState(error = e.localizedMessage ?: "Error desconocido")
             }
         }
     }
@@ -86,6 +88,13 @@ class SerieDetailViewModel @Inject constructor(
                 date // Devolver original en caso de error
             }
         }
+    }
+    
+    // Función para formatear el voteAverage a un formato legible
+    private fun formatVoteAverage(voteAverage: Double?): String {
+        return voteAverage?.let {
+            String.format("%.1f", it)
+        } ?: "-"
     }
 
     // Función para saber si un elemento está en vistos

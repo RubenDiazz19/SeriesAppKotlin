@@ -174,12 +174,23 @@ class SmartSerieRepository @Inject constructor(
         serieId: Int,
         seasonNumber: Int
     ): AppResult<Season> {
-        // Si hay conexión de red, obtener desde la API
+        // Primero intentamos obtener los detalles de la temporada desde la caché
+        val cachedSeason = roomRepository.getSeasonDetails(serieId, seasonNumber)
+        if (cachedSeason != null) {
+            return AppResult.Success(cachedSeason)
+        }
+
+        // Si hay conexión de red, obtener desde la API y almacenar en caché
         if (networkUtils.isNetworkAvailable()) {
-            return apiRepository.getSeasonDetails(serieId, seasonNumber)
+            val result = apiRepository.getSeasonDetails(serieId, seasonNumber)
+            if (result is AppResult.Success) {
+                // Guardar en caché los detalles de la temporada
+                roomRepository.cacheSeasonDetails(result.data, serieId)
+            }
+            return result
         }
     
         // Sin conexión y sin caché
-        return AppResult.Error(Exception("No network connection and no cached season details."))
+        return AppResult.Error(Exception("Esta información no está disponible sin conexión"))
     }
 }
