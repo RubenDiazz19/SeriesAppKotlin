@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
@@ -81,8 +82,26 @@ fun SerieDetailScreen(
             TopAppBar(
                 title = { /* No title here */ },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                color = Color.Black.copy(alpha = 0.3f),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                Icons.Default.ArrowBack, 
+                                contentDescription = "Volver", 
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -91,35 +110,7 @@ fun SerieDetailScreen(
                     if (isUserLoggedIn) {
                         // Botón de favoritos
                         val isFavorite by favoriteViewModel.isFavorite(serieId).collectAsState(initial = false)
-                        IconButton(onClick = { 
-                            val serie = Serie(
-                                id = serieId,
-                                title = state.title ?: "",
-                                overview = state.overview ?: "",
-                                posterUrl = state.posterUrl ?: "",
-                                backdropUrl = null,
-                                voteAverage = 0.0,
-                                genres = state.genres,
-                                seasons = emptyList(),
-                                originalTitle = state.originalTitle,
-                                firstAirDate = state.releaseDate,
-                                voteCount = null,
-                                runtime = null,
-                                numberOfSeasons = state.numberOfSeasons,
-                                numberOfEpisodes = state.numberOfEpisodes,
-                                status = state.status,
-                                tagline = state.tagline
-                            )
-                            favoriteViewModel.toggleFavorite(serie, !isFavorite) 
-                        }) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                                contentDescription = if (isFavorite) "Quitar de favoritos" else "Añadir a favoritos",
-                                tint = if (isFavorite) Color.Red else Color.White
-                            )
-                        }
-                        
-                        // Botón de visto
+
                         // Botón de visto
                         val isWatched by watchedViewModel.isWatched(serieId).collectAsState(initial = false)
                         
@@ -160,34 +151,24 @@ fun SerieDetailScreen(
                                 watchedViewModel.toggleWatched(serie, allSeasonsWatched)
                             }
                         }
-                        
-                        IconButton(onClick = { 
-                            val serie = Serie(
-                                id = serieId,
-                                title = state.title ?: "",
-                                overview = state.overview ?: "",
-                                posterUrl = state.posterUrl ?: "",
-                                backdropUrl = null,
-                                voteAverage = 0.0,
-                                genres = state.genres,
-                                seasons = emptyList(),
-                                originalTitle = state.originalTitle,
-                                firstAirDate = state.releaseDate,
-                                voteCount = null,
-                                runtime = null,
-                                numberOfSeasons = state.numberOfSeasons,
-                                numberOfEpisodes = state.numberOfEpisodes,
-                                status = state.status,
-                                tagline = state.tagline
-                            )
-                            watchedViewModel.toggleWatched(serie, !isWatched) 
-                        }) {
-                            Icon(
-                                imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
-                                contentDescription = if (isWatched) "Marcar como no vista" else "Marcar como vista",
-                                tint = if (isWatched) Color(0xFFFFD700) else Color.White
-                            )
-                        }
+                        // Icono de visto (no clickeable) - envuelto en círculo
+Box(
+    modifier = Modifier
+        .padding(end = 16.dp)
+        .size(40.dp)
+        .background(
+            color = Color.Black.copy(alpha = 0.3f),
+            shape = CircleShape
+        ),
+    contentAlignment = Alignment.Center
+) {
+    Icon(
+        imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+        contentDescription = if (isWatched) "Serie vista" else "Serie no vista",
+        tint = if (isWatched) Color(0xFFFFD700) else Color.White,
+        modifier = Modifier.size(24.dp)
+    )
+}
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -490,21 +471,30 @@ private fun SeasonCard(
                 )
 
                 if (favoriteViewModel.isUserLoggedIn()) {
-                    IconButton(
-                        onClick = {
-                            watchedViewModel.toggleWatchedSeason(serieId, season.seasonNumber, !isWatched)
-                        },
+                    Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(4.dp)
-                            .size(24.dp)
+                            .size(22.dp)
+                            .background(
+                                color = Color.Black.copy(alpha = 0.3f),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
-                            contentDescription = if (isWatched) "Marcar como no vista" else "Marcar como vista",
-                            tint = if (isWatched) Color(0xFFFFD700) else Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        IconButton(
+                            onClick = {
+                                watchedViewModel.toggleWatchedSeason(serieId, season.seasonNumber, !isWatched)
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+                                contentDescription = if (isWatched) "Marcar como no vista" else "Marcar como vista",
+                                tint = if (isWatched) Color(0xFFFFD700) else Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import androidx.compose.runtime.derivedStateOf
 import com.example.seriesappkotlin.core.model.Episode
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.key
+import androidx.compose.foundation.shape.CircleShape
 import com.example.seriesappkotlin.features.favorites.FavoriteViewModel
 import com.example.seriesappkotlin.features.favorites.WatchedViewModel
 
@@ -90,8 +92,27 @@ fun SeasonDetailScreen(
         TopAppBar(
             title = { /* No title here */ },
             navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.3f),
+                            shape = CircleShape
+                        )
+                        .padding(2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Volver", 
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             },
             actions = {
@@ -101,7 +122,13 @@ fun SeasonDetailScreen(
                     // Indicador de visto para toda la temporada (no pulsable)
                     val isWatched by watchedViewModel.isSeasonWatched(serieId, seasonNumber).collectAsState(initial = false)
                     Box(
-                        modifier = Modifier.padding(end = 16.dp),
+                        modifier = Modifier
+                            .padding(end = 16.dp)
+                            .size(40.dp)
+                            .background(
+                                color = Color.Black.copy(alpha = 0.3f),
+                                shape = CircleShape
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -225,20 +252,25 @@ private fun SeasonDetailContent(
 
             Spacer(modifier = Modifier.height(24.dp))
             
-            // En la función SeasonDetailContent, modifica la sección de episodios:
+            
+            
+            // Luego, reemplazar la sección de episodios (líneas 227-295) con esta versión corregida:
             
             // Episodios
             uiState.episodes?.let { episodes ->
                 if (episodes.isNotEmpty()) {
-                    // Estado para forzar recomposición
-                    var refreshTrigger by remember { mutableStateOf(0) }
+                    // Estado para forzar recomposición cuando cambian los episodios
+                    var refreshTrigger by remember(serieId, seasonNumber) { mutableStateOf(0) }
                     
-                    // Verificar si todos los episodios están marcados como vistos
-                    val allWatched = episodes.all { it.isWatched }
+                    // Calcular si todos están marcados como vistos
+                    val allWatched = remember(serieId, seasonNumber, episodes.map { it.isWatched }) {
+                        episodes.all { it.isWatched }
+                    }
                     
-                    // LaunchedEffect para actualizar automáticamente el estado de la temporada
-                    LaunchedEffect(allWatched) {
-                        watchedViewModel.toggleWatchedSeason(serieId, seasonNumber, allWatched)
+                    // LaunchedEffect que se ejecuta solo cuando cambian los episodios reales
+                    LaunchedEffect(serieId, seasonNumber, episodes.map { it.isWatched }) {
+                        val currentAllWatched = episodes.all { it.isWatched }
+                        watchedViewModel.toggleWatchedSeason(serieId, seasonNumber, currentAllWatched)
                     }
                     
                     // Título y botón de marcar todos en la misma línea
@@ -256,26 +288,15 @@ private fun SeasonDetailContent(
                             color = Color.White
                         )
                         
-                        // En la función SeasonDetailContent, reemplazar el botón "Marcar todo como visto":
+                        // Botón que se actualiza dinámicamente
                         Button(
                             onClick = {
-                                if (allWatched) {
-                                    // Desmarcar todos los episodios
-                                    episodes.forEach { episode ->
-                                        episode.isWatched = false
-                                        watchedViewModel.toggleWatchedEpisode(serieId, seasonNumber, episode.episodeNumber, false)
-                                    }
-                                    // Marca la temporada como NO vista
-                                    watchedViewModel.toggleWatchedSeason(serieId, seasonNumber, false)
-                                } else {
-                                    episodes.forEach { episode ->
-                                        episode.isWatched = true
-                                        watchedViewModel.toggleWatchedEpisode(serieId, seasonNumber, episode.episodeNumber, true)
-                                    }
-                                    // Marca la temporada como vista
-                                    watchedViewModel.toggleWatchedSeason(serieId, seasonNumber, true)
+                                val newWatchedState = !allWatched
+                                episodes.forEach { episode ->
+                                    episode.isWatched = newWatchedState
+                                    watchedViewModel.toggleWatchedEpisode(serieId, seasonNumber, episode.episodeNumber, newWatchedState)
                                 }
-                                refreshTrigger++
+                                refreshTrigger++ // Forzar recomposición
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFFFFD700),
@@ -297,13 +318,14 @@ private fun SeasonDetailContent(
                     
                     // Lista de episodios con key para forzar recomposición
                     episodes.forEachIndexed { index, episode ->
-                        key("$index-$refreshTrigger") {
+                        key("$serieId-$seasonNumber-$index-$refreshTrigger") {
                             EpisodeItem(
                                 episode = episode,
                                 watchedViewModel = watchedViewModel,
                                 serieId = serieId,
                                 seasonNumber = seasonNumber,
-                                allEpisodes = episodes
+                                allEpisodes = episodes,
+                                onEpisodeStateChanged = { refreshTrigger++ }
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
@@ -322,10 +344,10 @@ private fun EpisodeItem(
     watchedViewModel: WatchedViewModel,
     serieId: Int,
     seasonNumber: Int,
-    allEpisodes: List<Episode>
+    allEpisodes: List<Episode>,
+    onEpisodeStateChanged: () -> Unit // Nuevo parámetro
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    // Estado local que se sincroniza con el estado del episodio
     var isWatched by remember(episode.isWatched) { mutableStateOf(episode.isWatched) }
     val maxLines = if (isExpanded) Int.MAX_VALUE else 2
     
@@ -334,15 +356,8 @@ private fun EpisodeItem(
         isWatched = episode.isWatched
     }
     
-    // LaunchedEffect para actualizar el estado de la temporada cuando cambie un episodio
-    LaunchedEffect(isWatched) {
-        val allWatched = allEpisodes.all { it.isWatched }
-        watchedViewModel.toggleWatchedSeason(serieId, seasonNumber, allWatched)
-    }
-    
     Card(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.DarkGray),
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -401,8 +416,8 @@ private fun EpisodeItem(
                     onClick = { 
                         isWatched = !isWatched
                         episode.isWatched = isWatched
-                        // Guardar el estado en la base de datos
                         watchedViewModel.toggleWatchedEpisode(serieId, seasonNumber, episode.episodeNumber, isWatched)
+                        onEpisodeStateChanged() // Notificar el cambio
                     }
                 ) {
                     Icon(
