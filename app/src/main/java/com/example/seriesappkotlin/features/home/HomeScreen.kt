@@ -47,7 +47,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
     favoriteViewModel: FavoriteViewModel = hiltViewModel(),
-    watchedViewModel: WatchedViewModel = hiltViewModel() // Agregar WatchedViewModel
+    watchedViewModel: WatchedViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
@@ -60,7 +60,10 @@ fun HomeScreen(
     // Agregar estas líneas para manejar favoritos
     val showFavoritesOnly by viewModel.showFavoritesOnly.collectAsState()
     val favoriteSeries by viewModel.favoriteSeries.collectAsState()
-
+    
+    // Agregar estas líneas para manejar series vistas
+    val showWatchedOnly by viewModel.showWatchedOnly.collectAsState()
+    val watchedSeries by viewModel.watchedSeries.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     val pagedItems = viewModel.pagedSeries.collectAsState().value.collectAsLazyPagingItems()
@@ -163,7 +166,18 @@ fun HomeScreen(
                         items = favoriteSeries,
                         listState = listState,
                         favoriteViewModel = favoriteViewModel,
-                        watchedViewModel = watchedViewModel, // Agregar watchedViewModel
+                        watchedViewModel = watchedViewModel,
+                        isGuest = isGuest,
+                        onNavigateToDetail = onNavigateToDetail
+                    )
+                }
+                // Agregar condición para mostrar series vistas
+                showWatchedOnly && !isGuest -> {
+                    ModernSeriesGrid(
+                        items = watchedSeries,
+                        listState = listState,
+                        favoriteViewModel = favoriteViewModel,
+                        watchedViewModel = watchedViewModel,
                         isGuest = isGuest,
                         onNavigateToDetail = onNavigateToDetail
                     )

@@ -87,6 +87,28 @@ class HomeViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    val watchedSeries: StateFlow<List<Serie>> = combine(
+        userRepository.currentUser,
+        _showWatchedOnly
+    ) { currentUser: Any?, showWatchedOnly: Boolean ->
+        val isGuest = currentUser == null
+        if (showWatchedOnly && !isGuest) {
+            try {
+                watchedRepository.getWatchedSeries()
+            } catch (e: Exception) {
+                updateError(e.localizedMessage ?: "Error al cargar las series vistas")
+                flowOf(emptyList<Serie>())
+            }
+        } else {
+            flowOf(emptyList<Serie>())
+        }
+    }.flatMapLatest { it }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     // Funciones para controlar los filtros
     fun toggleFavoritesFilter() {
         _showFavoritesOnly.value = !_showFavoritesOnly.value
@@ -143,28 +165,6 @@ class HomeViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = flowOf(PagingData.empty())
     )
-
-    val watchedSeries: StateFlow<List<Serie>> = combine(
-        _sortBy,
-        userRepository.currentUser
-    ) { sort: SortType, currentUser: Any? ->
-        val isGuest = currentUser == null
-        if (sort == SortType.WATCHED && !isGuest) {
-            try {
-                watchedRepository.getWatchedSeries()
-            } catch (e: Exception) {
-                updateError(e.localizedMessage ?: "Error al cargar las series vistas")
-                flowOf(emptyList<Serie>())
-            }
-        } else {
-            flowOf(emptyList<Serie>())
-        }
-    }.flatMapLatest { it }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
 
     val cachedSeries: StateFlow<List<Serie>> = _selectedGenres
         .flatMapLatest { selectedGenres: List<GenreItem> ->
